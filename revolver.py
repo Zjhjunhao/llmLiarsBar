@@ -1,6 +1,9 @@
 import random
 
 class Revolver:
+    """
+    左轮手枪类
+    """
     def __init__(self, chambers=6):
         self.chambers = chambers
         self.bulletPosition = random.randint(1, chambers)

@@ -5,7 +5,7 @@ import random
 
 class Player:
     def __init__(self, name, model, client):
-        self.name = name
+        self.name = name        
         self.model = model
         self.hand = []
         self.revolver = Revolver()  
@@ -28,11 +28,19 @@ class Player:
             请从以下行动中选择：
             A) 出牌：选择1-3张手牌作为{currentCard}打出
             B) 质疑：对上一个玩家的出牌喊"Liar!"（如果你怀疑他们在说谎）
-                    
+            
+            规则：
+            1.若你是第一个行动，你只能出牌
+            2.若上一个玩家出完了牌，你只能质疑
+            3.每人人有五张牌，目标牌在牌堆里一共有六张，你可以估算场上已出的牌的数量判断上家是否说谎
+            4.你可以选择将非目标牌作为目标牌打出，但被质疑就将失败，若没被质疑，那就是你的机会
+            5.出多张牌能给对方巨大的心理压力，在合适的时机出更多的牌
+
+
             请用JSON格式回答，包含：
             - "action": "play" 或 "question"
             - "cards": [手牌索引]（如果是出牌）
-            - "playAction": 出牌的行为，你可以简单描述你出牌的动作，比如随意丢出一张牌,或向下家轻蔑一笑，发挥想象描述你的出牌动作，用于迷惑对手出牌
+            - "playAction": 出牌的行为，你可以简单描述你出牌的动作，比如随意丢出两张牌,或向下家轻蔑一笑，发挥想象描述你的出牌动作，用于迷惑对手出牌
             - "reason": 你的决策理由
         """
 
@@ -66,9 +74,13 @@ class Player:
                 # 验证卡牌索引是否有效
                 cards = [int(i) for i in decision["cards"]]
                 if all(0 <= i < len(self.hand) for i in cards) and 1 <= len(cards) <= 3:
+                    originHand = self.hand.copy()
+                    for i in sorted(cards, reverse=True):
+                        self.hand.pop(i)
                     return {
                         "type": "play",
                         "cards": cards,
+                        "originHand": originHand,
                         "playAction":decision.get("playAction", ""),
                         "reason": decision.get("reason", "")
                     }
