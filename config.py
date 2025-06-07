@@ -9,3 +9,5 @@ deepseek_clinet = OpenAI(
         )
 players.append(Player("deepseek1", "deepseek-chat", deepseek_clinet))
 players.append(Player("deepseek2", "deepseek-chat", deepseek_clinet))
+players.append(Player("deepseek3", "deepseek-chat", deepseek_clinet))
+players.append(Player("deepseek4", "deepseek-chat", deepseek_clinet))

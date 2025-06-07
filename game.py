@@ -53,7 +53,7 @@ class Game:
         
         self.roundOver = False
         print(f"\n--- New Round: {self.gameRound} ---")
-        print(f"\n--- This Round Card: {self.currentCard} ---")
+        print(f"--- This Round Card: {self.currentCard} ---")
 
     def CheckCard(self, player):
         """
@@ -76,6 +76,7 @@ class Game:
                 playerNum = len(self.players)
                 for i in range(playerNum):
                     player = self.players[(i + self.lastLossPlayer)%playerNum]
+                    print(f"--- {player.name}'s turn ---")
                     action = player.PlayCard(self.roundLog, self.currentCard)
                     print(action)
                     if action["type"] == "question":
@@ -98,11 +99,14 @@ class Game:
                                 print(f"---Fire fial, {player.name} still alive---")
                             self.lastLossPlayer = (i + self.lastLossPlayer - 1)%playerNum
                             self.roundOver = True
+                        break
                     else:
+                        remainCard = len(player.hand)
                         self.palyCardLog = {
                         "playerName":player.name,
                         "playCardNum":len(action["cards"]),
-                        "playAction":action["playAction"]
+                        "playAction":action["playAction"],
+                        "remainCard":remainCard
                         }
                         self.roundLog.append(self.palyCardLog)
                         self.allRoundLog.append(action)
