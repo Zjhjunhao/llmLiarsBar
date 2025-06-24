@@ -22,7 +22,7 @@ def prompt_prepare(currentCard, roundLog, hand, fire_times, playNum, selfName, c
                 - "playerName"：玩家昵称  
                 - "playCardNum"：本次打出的牌数（均声称为目标牌）  
                 - "remainCard"：出牌后该玩家的剩余手牌数（不包括已经打1出的）  
-                - "playAction"：出牌时的动作表现 
+                - "playAction"：出牌时的动作表现
                 - "playCardTotal"：当前整个轮次的累计出牌总数（声称为目标牌的总数）
         - 本轮出牌总数（声称为目标牌的数量）：`{roundLog[-1]["playCardTotal"] if roundLog else 0}`
         - 已开枪次数：`{fire_times}/{chambers}`
@@ -44,11 +44,11 @@ def prompt_prepare(currentCard, roundLog, hand, fire_times, playNum, selfName, c
     【输出格式 JSON】
         - action: "play" 或 "question"
         - cards: 选中手牌索引数组（play时）
-        - playAction: 出牌或质疑时的动作描述     示例：（可以自由发挥）- 出牌时：“我微微低头，若无其事地丢出两张牌”  - 质疑时：“我提高音量，直视上家喊‘Liar!’”
+        - playAction: 出牌或质疑时的动作描述     示例：（可以自由发挥）- 出牌时：“微微低头，若无其事地丢出两张牌”  - 质疑时：“故意提高音量，直视上家喊‘Liar!’”
             - 注意：仅可透露出牌数量（如“两张牌”），绝不可提及具体牌面或花色。
             - 你的动作要尽可能夸张、丰富，不要被别人通过你的动作就判断出你出牌的真假 
             - 给出的动作不要抄袭前面玩家！
         - reason: 中文，详细决策理由
-            例如：已知牌面信息、上家或其他玩家心理分析、自己手牌结构、剩余目标牌数、欺骗/真打的权衡、扣动扳机风险评估，等等内容不限制，可自由发挥    
+            例如：已知牌面信息、上家或其他玩家动作分析、自己手牌结构、剩余目标牌数、欺骗/真打的权衡、扣动扳机风险评估，等等内容不限制，可自由发挥    
     """
     return prompt
