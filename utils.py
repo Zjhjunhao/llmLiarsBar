@@ -8,7 +8,10 @@ class Logger:
 
     def write(self, message):
         self.terminal.write(message)
+        self.terminal.flush()        # 添加：刷新终端输出
         self.log.write(message)
+        self.log.flush()             # 保持已有：刷新日志文件写入
 
     def flush(self):
-        pass
+        self.terminal.flush()
+        self.log.flush()

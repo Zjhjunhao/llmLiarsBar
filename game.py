@@ -2,10 +2,12 @@ import random, os, sys
 from revolver import Revolver
 from config import players
 from utils import Logger
+from role_effects import *
+from role import *
 
 
 class Game:
-    def __init__(self, players, file_name=r"Demo_doubao"):
+    def __init__(self, players, file_name=r"Demo_doubao——2"):
         # 初始化牌组
         self.Cards = ["K"]*6 + ["Q"]*6 + ["A"]*6 + ["Joker"]*2
         self.currentCard = None
@@ -125,7 +127,7 @@ class Game:
                             self.roundOver = True
                             break
                         if self.palyCardLog is not None and self.palyCardLog['remainCard'] == 0:
-                            self.playersinround.remove(self.palyCardLog['playerName']) # 上家牌出完且没有质疑，上家从该轮次中退出
+                            self.remove_player(self.palyCardLog['playerName'])  # 上家牌出完且没有人质疑，上家从该轮次中退出
                         remainCard = len(player.hand)
                         self.roundCards += len(action["cards"])
                         self.palyCardLog = {
@@ -146,6 +148,29 @@ class Game:
     def save_logs(self, action):
         self.allRoundLog.append(action)
 
+    def remove_player(self, player_name):
+        for player in self.players:
+            if player.name == player_name and player.type == "Palyer":
+                player.exit_round()
+        self.playersinround.remove(player_name)
+        return
+        
+    
+class GamewithRoles(Game):
+    def __init__(self, players, file_name=r"Demo_doubao——2"):
+        super().__init__(players, file_name)
+    
+    def assign_roles_to_players(self,):
+        roles = get_defined_roles()
+        
+        if len(self.players) > len(roles):
+            raise ValueError("玩家数量超过可用角色数，无法分配唯一角色")
+
+        selected_roles = random.sample(roles, len(self.players))  # 不重复地抽取角色
+
+        for player, role in zip(self.players, selected_roles):
+            player.role = role
+            print(f"🎭 玩家 {player.name} 分配到角色：{role.name} - {role.description}")
 
 if __name__ == "__main__":
     game = Game(players)
