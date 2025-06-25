@@ -6,13 +6,14 @@ from revolver import Revolver
 from config import players
 from game_new import Game
 from utils import Logger
+from player import *
 
 
 class GameUI:
     def __init__(self, root):
         self.root = root
         self.root.title("骗子酒馆AI大战")
-        self.root.geometry("800x600")  # 设置窗口大小
+        self.root.geometry("800x900")  # 设置窗口大小
         
         # 游戏状态标志
         self.game_running = False
@@ -129,7 +130,20 @@ class GameUI:
         # 加载提示
         self.loading_label = tk.Label(self.root, text="", font=("Arial", 10), fg="red")
         self.loading_label.grid(row=3, column=0, sticky="s", pady=5)
-
+        
+        # 新增：输入框区域
+        input_frame = tk.Frame(self.root, bg="#f0f0f0", relief=tk.SUNKEN, bd=1)
+        input_frame.grid(row=5, column=0, sticky="ew", padx=10, pady=5)
+        
+        self.input_entry = tk.Entry(input_frame, font=("Arial", 12))
+        self.input_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5, pady=5)
+        self.input_entry.bind("<Return>", self.on_input_submit)  # 绑定回车键提交
+        
+        self.submit_button = tk.Button(
+            input_frame, text="提交", command=self.on_input_submit,
+            font=("Arial", 12), bg="#4CAF50", fg="white", state=tk.DISABLED
+        )
+        self.submit_button.pack(side=tk.RIGHT, padx=5, pady=5)
     def init_game(self):
         """
         初始化游戏
@@ -208,7 +222,13 @@ class GameUI:
             current_player = self.game.players[self.game.currentIndex]
         
         # 处理玩家行动
-        self.process_player_turn_in_thread(current_player)
+        #self.process_player_turn_in_thread(current_player)
+
+        if isinstance(current_player, RealPlayer):  # 真实玩家
+            self.real_player_turn = True
+            self.enable_input(current_player)
+        else:  # AI玩家
+            self.process_player_turn_in_thread(current_player)
 
     def process_player_turn_in_thread(self, player):
         """
@@ -223,13 +243,13 @@ class GameUI:
         self.root.after(0, lambda: self.loading_label.config(text=f"{player.name} 思考中..."))
         
         try:
-            self.log_action(f"--- {player.name}'s turn ---")
+            self.log_action(f"--- {player.name}的回合---")
             
             # 记录玩家当前手牌（在主线程中更新）
             current_hand = player.hand.copy()
-            self.root.after(0, lambda: self.log_action(f"--- {player.name}'s hand: {current_hand} ---"))
+            self.root.after(0, lambda: self.log_action(f"--- {player.name}的手牌: {current_hand} ---"))
             
-            # 玩家出牌（假设PlayCard是大模型调用）
+            # 玩家出牌
             action = player.PlayCard(self.game.roundLog, self.game.currentCard, len(self.game.players))
             
             # 记录出牌（在主线程中更新）
@@ -256,6 +276,141 @@ class GameUI:
                 
             # 继续下一个玩家（在主线程中调度）
             self.root.after(1000, self.run_current_round)  # 延迟1秒，便于观察
+
+
+    def enable_input(self, player):
+        """
+        启用输入功能
+        """
+        self.log_action(f"你的回合，请输入操作")
+        self.input_enabled = True
+        self.input_entry.config(state=tk.NORMAL)
+        self.submit_button.config(state=tk.NORMAL)
+        
+        # 显示手牌提示
+        hand_display = "你的手牌: " + ", ".join([f"{i}:{card}" for i, card in enumerate(player.hand)])
+        self.log_action(hand_display)
+        
+        if self.game.roundLog:
+            self.log_action("请输入操作（出牌/play/p/1 或 质疑/question/q/2）：")
+        else:
+            self.log_action("请输入操作（出牌/play/p/1）：")
+
+    def disable_input(self):
+        """
+        禁用输入功能
+        """
+        self.input_enabled = False
+        self.input_entry.config(state=tk.DISABLED)
+        self.submit_button.config(state=tk.DISABLED)
+        self.input_entry.delete(0, tk.END)
+
+    def on_input_submit(self, event=None):
+        """
+        处理输入提交
+        """
+        if not self.input_enabled:
+            return
+            
+        user_input = self.input_entry.get().strip().lower()
+        self.log_action(f"玩家输入: {user_input}")
+        
+        current_player = self.game.players[self.game.currentIndex]
+        action = current_player.parse_action_input(user_input)  # 使用RealPlayer的解析方法
+        
+        if not action:
+            self.log_action("无效输入，请重新输入。")
+            return
+            
+        # 处理出牌操作
+        if action == "play":
+            self.handle_play_action(current_player)
+        # 处理质疑操作
+        elif action == "question":
+            self.handle_question_action(current_player)
+    
+    def handle_play_action(self, player):
+        """
+        处理出牌操作
+        """
+        self.log_action("请输入要打出的牌的索引（空格分隔，最多3张）:")
+        self.input_entry.delete(0, tk.END)
+        self.input_entry.bind("<Return>", self.on_play_cards_submit)
+        self.current_action = "play"
+        self.current_player = player
+
+    def on_play_cards_submit(self, event):
+        """
+        处理出牌索引输入
+        """
+        card_indexes = self.input_entry.get().strip()
+        
+        try:
+            cards = [int(i) for i in card_indexes.split()]
+            print(f"输入的索引: {cards}")
+            print(f"当前玩家手牌: {self.current_player.hand}")
+            
+            # 检查索引有效性
+            if not all(0 <= i < len(self.current_player.hand) for i in cards):
+                self.log_action("错误：输入的索引超出手牌范围")
+                self.handle_play_action(self.current_player)
+                return
+                
+            # 检查卡牌数量
+            if not (1 <= len(cards) <= 3):
+                self.log_action("错误：请选择1-3张牌")
+                self.handle_play_action(self.current_player)
+                return
+                
+            # 检查是否有重复索引
+            if len(cards) != len(set(cards)):
+                self.log_action("错误：不能选择重复的牌")
+                self.handle_play_action(self.current_player)
+                return
+                
+            # 调用RealPlayer的PlayCard方法
+            action = self.current_player.PlayCard(self.game.roundLog, self.game.currentCard, len(self.game.players))
+            
+            # 确保action包含必要的键
+            if "cards" not in action:
+                action["cards"] = []
+            if "type" not in action:
+                action["type"] = "play"
+            action["cards"] = cards
+            action["type"] = "play"
+            action["playAction"] = self.current_player.action_explaination(self.game.roundLog, self.current_player.hand, len(self.game.players), action, cards)
+            self.game.process_action(action)
+
+            for i in sorted(cards, reverse=True):
+                if i < len(self.current_player.hand):  # 双重检查索引有效性
+                    self.current_player.hand.pop(i)
+            
+            #self.game.process_action(action)
+            self.log_action(f"--- {self.current_player.name} 出牌: {[card for i, card in enumerate(self.current_player.hand) if i not in cards]} ---")
+            self.update_player_cards()
+            self.disable_input()
+            self.real_player_turn = False
+            self.root.after(1000, self.run_current_round)
+            self.input_entry.bind("<Return>", self.on_input_submit)
+            
+        except ValueError:
+            self.log_action("错误：请输入有效的数字索引")
+            self.handle_play_action(self.current_player)
+
+
+    def handle_question_action(self, player):
+        """
+        处理质疑操作
+        """
+        # 调用RealPlayer的PlayCard方法
+        action = player.PlayCard(self.game.roundLog, self.game.currentCard, len(self.game.players))
+        action["playAction"] = self.current_player.action_explaination(self.game.roundLog, self.current_player.hand, len(self.game.players), action, [])
+        action["type"] = "question"
+        
+        self.game.process_action(action)
+        self.disable_input()
+        self.real_player_turn = False
+        self.root.after(1000, self.run_current_round)
 
     def on_round_complete(self):
         """

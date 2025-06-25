@@ -2,8 +2,8 @@ import random, os, sys
 from revolver import Revolver
 from config import players
 from utils import Logger
-from role_effects import *
-from role import *
+# from role_effects import *
+# from role import *
 
 
 class Game:
@@ -160,21 +160,21 @@ class Game:
         return
         
     
-class GamewithRoles(Game):
-    def __init__(self, players, file_name=r"Demo_doubao——2"):
-        super().__init__(players, file_name)
+# class GamewithRoles(Game):
+#     def __init__(self, players, file_name=r"Demo_doubao——2"):
+#         super().__init__(players, file_name)
     
-    def assign_roles_to_players(self,):
-        roles = get_defined_roles()
+#     def assign_roles_to_players(self,):
+#         roles = get_defined_roles()
         
-        if len(self.players) > len(roles):
-            raise ValueError("玩家数量超过可用角色数，无法分配唯一角色")
+#         if len(self.players) > len(roles):
+#             raise ValueError("玩家数量超过可用角色数，无法分配唯一角色")
 
-        selected_roles = random.sample(roles, len(self.players))  # 不重复地抽取角色
+#         selected_roles = random.sample(roles, len(self.players))  # 不重复地抽取角色
 
-        for player, role in zip(self.players, selected_roles):
-            player.role = role
-            print(f"🎭 玩家 {player.name} 分配到角色：{role.name} - {role.description}")
+#         for player, role in zip(self.players, selected_roles):
+#             player.role = role
+#             print(f"🎭 玩家 {player.name} 分配到角色：{role.name} - {role.description}")
 
 if __name__ == "__main__":
     game = Game(players)

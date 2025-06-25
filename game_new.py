@@ -18,7 +18,7 @@ class Game:
         self.allRoundLog = []  # 存放所有action
         self.playersinround = set()
 
-        self.currentIndex = 0
+        self.currentIndex = random.randint(0, 3)
         self.winner = None
         self.gameOver = False
         self.lastLossPlayer = random.randint(0, 3)
@@ -54,7 +54,9 @@ class Game:
         self.ui.update_player_cards()  
 
     def RoundStart(self):
-        """轮次开始"""
+        """
+        轮次开始
+        """
         self.gameRound += 1
         self.playLog.append(self.roundLog)
         self.roundLog = []
@@ -119,6 +121,8 @@ class Game:
                     lastPlayer.is_out = True
                 else:
                     self.ui.log_action(f"--- {lastPlayer.name} 未中弹 ---")
+                    self.currentIndex = prev_index
+                    self.lastLossPlayer = prev_index
             else:
                 self.ui.log_action("--- 质疑失败 ---")
                 if player.revolver.fire():
@@ -129,6 +133,8 @@ class Game:
                     player.is_out = True
                 else:
                     self.ui.log_action(f"--- {player.name} 未中弹 ---")
+                    self.currentIndex = i % len(self.players)
+                    self.lastLossPlayer = i % len(self.players)
                     
             self.roundOver = True
             self.ui.update_player_status()  # 更新玩家状态
@@ -187,6 +193,7 @@ class Game:
         self.currentIndex = (self.currentIndex + 1) % len(self.players)
         while self.players[self.currentIndex].is_out:
             self.currentIndex = (self.currentIndex + 1) % len(self.players)
+            
     def GameStart(self):
         """
         游戏开始

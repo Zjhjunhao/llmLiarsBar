@@ -12,6 +12,7 @@ class LocalSentenceTransformerEmbeddingFunction(EmbeddingFunction):
     """
     def __init__(self, model_name='all-mpnet-base-v2', device='cuda'):
         self.model = SentenceTransformer(model_name)
+        #print(torch.cuda.is_available())
         self.model.to(device)
 
     def __call__(self, texts):

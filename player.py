@@ -92,6 +92,13 @@ class RealPlayer(Player):
         super().__init__(name, model, client, prompt, type)
     
     def PlayCard(self, roundLog, currentCard, playNum):
+        return {
+            "type": "",
+            "cards": [],
+            "originHand": self.hand.copy(),
+            "playAction": "",
+            "reason": ""
+        }
         print(f"\n---- 玩家 {self.name} 的回合 ----")
         print(f"当前需要出的牌: {currentCard}")
         print(f"你的手牌为:")
