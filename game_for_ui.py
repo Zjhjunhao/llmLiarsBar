@@ -135,7 +135,15 @@ class Game:
                     self.ui.log_action(f"--- {player.name} 未中弹 ---")
                     self.currentIndex = i % len(self.players)
                     self.lastLossPlayer = i % len(self.players)
-                    
+            
+            self.palyCardLog = {
+                "playerName": player.name,
+                "action":"question",
+                "playAction": action["playAction"],
+                "remainCard": len(player.hand),
+            }
+
+            self.ui.update_play_log(self.palyCardLog)  
             self.roundOver = True
             self.ui.update_player_status()  # 更新玩家状态
         else:
@@ -163,6 +171,7 @@ class Game:
             # 更新日志信息
             self.palyCardLog = {
                 "playerName": player.name,
+                "action":"play",
                 "playCardNum": cards_played,
                 "playCardTotal": self.roundCards,
                 "playAction": action["playAction"],

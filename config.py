@@ -19,12 +19,12 @@ doubao_client = OpenAI(
     api_key= "a874d8e5-5d4d-4ac5-9487-1c2222e7720c",   # 取值范围：enabled， disabled，auto
 )
 
-prompt = Prompt()
+prompt = Prompt(RAG=False)
 
 players.append(Player("deepseek1", "deepseek-chat", deepseek_clinet, prompt))
 players.append(Player("deepseek2", "deepseek-chat", deepseek_clinet, prompt))
 players.append(Player("deepseek3", "deepseek-chat", deepseek_clinet, prompt))
-#players.append(Player("deepseek4", "deepseek-chat", deepseek_clinet, prompt))
+# players.append(Player("deepseek4", "deepseek-chat", deepseek_clinet, prompt))
 players.append(RealPlayer("Player1", "deepseek-chat", deepseek_clinet, prompt))
 # players.append(Player("doubao1", "ep-20250612202125-pkq7n", doubao_client, prompt))
 # players.append(Player("qwen1", "qwen-plus", qwen_client))

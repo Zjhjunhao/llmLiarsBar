@@ -1,5 +1,6 @@
 import random, os, sys
 from revolver import Revolver
+from player import *
 from config import players
 from utils import Logger
 # from role_effects import *
@@ -14,6 +15,7 @@ class Game:
 
         self.gameRound = 0
         self.players = players
+        self.hasRealPlayer = any(isinstance(p, RealPlayer) for p in players)
         self.playLog = []
         self.roundCards = 0 # 该回合中所有玩家出牌的总数
         self.roundLog = []
@@ -95,7 +97,7 @@ class Game:
                         continue
                     print(f"--- {player.name}'s turn ---")
                     action = player.PlayCard(self.roundLog, self.currentCard, playerNum)
-                    print(action)
+                    self.handle_print(action)
                     if action["type"] == "question":
                         lastPlayer = self.players[(i + self.lastLossPlayer - 1)%playerNum]
                         if self.CheckCard(lastPlayer):
@@ -158,7 +160,18 @@ class Game:
                 player.exit_round()
         self.playersinround.remove(player_name)
         return
-        
+
+    def handle_print(self, action:dict):
+        action = action.copy()
+        if self.hasRealPlayer: # 有真实玩家
+            if "originHand" in action:
+                del action["originHand"]
+            if "cards" in action:
+                action['cards'] = len(action["cards"])
+            if "reason" in action:
+                del action["reason"]
+        print(action)
+
     
 # class GamewithRoles(Game):
 #     def __init__(self, players, file_name=r"Demo_doubao——2"):

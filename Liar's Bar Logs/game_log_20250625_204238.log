@@ -1,0 +1,2 @@
+GameUI
+生成动作描述错误: 'GameUI' object has no attribute 'current_player'

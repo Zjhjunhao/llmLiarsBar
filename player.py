@@ -92,59 +92,66 @@ class RealPlayer(Player):
         super().__init__(name, model, client, prompt, type)
     
     def PlayCard(self, roundLog, currentCard, playNum):
-        return {
-            "type": "",
-            "cards": [],
-            "originHand": self.hand.copy(),
-            "playAction": "",
-            "reason": ""
-        }
-        print(f"\n---- 玩家 {self.name} 的回合 ----")
-        print(f"当前需要出的牌: {currentCard}")
-        print(f"你的手牌为:")
-        for idx, card in enumerate(self.hand):
-            print(f"{idx}: {card}")
-        if roundLog: print(f"你的上家: {roundLog[-1]}")
-        else: print("你是第一位玩家")
-        print(f"你已经开枪次数：{self.revolver.fire_times}")
-        while True:
-            if roundLog: 
-                raw_input_value = input("请选择操作（出牌/play/p/1 或 质疑/question/q/2）：")
-            else:
-                raw_input_value = input("请选择操作（出牌/play/p/1）：")
-            action = self.parse_action_input(raw_input_value)
-            if action:
-                break
-            print("无效输入，请重新输入。")
-        cards = []
-        if action == "play":
-            while True:
-                try:
-                    card_indexes = input("请输入要打出的牌的索引（空格分隔，最多3张）: ").strip()
-                    cards = [int(i) for i in card_indexes.split()]
-                    if all(0 <= i < len(self.hand) for i in cards) and 1 <= len(cards) <= 3:
-                        originHand = self.hand.copy()
-                        for i in sorted(cards, reverse=True):
-                            self.hand.pop(i)
-                        break
-                    else:
-                        print("输入的索引无效，请重新输入。")
-                except Exception as e:
-                    print(f"输入错误: {e}")
-        playaction = self.action_explaination(roundLog, currentCard, playNum, action, cards)
-        if action == "question":
+        import inspect
+        stack = inspect.stack()
+        caller_self = stack[1].frame.f_locals.get('self')
+        caller_class = caller_self.__class__.__name__ if caller_self else None
+        print(caller_class)
+        if caller_class == "GameUI":
             return {
-                "type": "question",
+                "type": "",
+                "cards": [],
                 "originHand": self.hand.copy(),
-                "playAction": playaction, 
-                "reason": "玩家主动质疑"}
-        elif action == "play":
-            return {
-                "type": "play",
-                "cards": cards,
-                "originHand": originHand,
-                "playAction": playaction, 
-                "reason": "玩家主动出牌"}
+                "playAction": "",
+                "reason": ""
+            }
+        elif caller_class == "Game":
+            print(f"\n---- 玩家 {self.name} 的回合 ----")
+            print(f"当前需要出的牌: {currentCard}")
+            print(f"你的手牌为:")
+            for idx, card in enumerate(self.hand):
+                print(f"{idx}: {card}")
+            if roundLog: print(f"你的上家: {roundLog[-1]}")
+            else: print("你是第一位玩家")
+            print(f"你已经开枪次数：{self.revolver.fire_times}")
+            while True:
+                if roundLog: 
+                    raw_input_value = input("请选择操作（出牌/play/p/1 或 质疑/question/q/2）：")
+                else:
+                    raw_input_value = input("请选择操作（出牌/play/p/1）：")
+                action = self.parse_action_input(raw_input_value)
+                if action:
+                    break
+                print("无效输入，请重新输入。")
+            cards = []
+            if action == "play":
+                while True:
+                    try:
+                        card_indexes = input("请输入要打出的牌的索引（空格分隔，最多3张）: ").strip()
+                        cards = [int(i) for i in card_indexes.split()]
+                        if all(0 <= i < len(self.hand) for i in cards) and 1 <= len(cards) <= 3:
+                            originHand = self.hand.copy()
+                            for i in sorted(cards, reverse=True):
+                                self.hand.pop(i)
+                            break
+                        else:
+                            print("输入的索引无效，请重新输入。")
+                    except Exception as e:
+                        print(f"输入错误: {e}")
+            playaction = self.action_explaination(roundLog, currentCard, playNum, action, cards)
+            if action == "question":
+                return {
+                    "type": "question",
+                    "originHand": self.hand.copy(),
+                    "playAction": playaction, 
+                    "reason": "玩家主动质疑"}
+            elif action == "play":
+                return {
+                    "type": "play",
+                    "cards": cards,
+                    "originHand": originHand,
+                    "playAction": playaction, 
+                    "reason": "玩家主动出牌"}
         
     def parse_action_input(self, user_input: str) -> str:
         """

@@ -22,8 +22,12 @@ class Prompt:
     """
     为智能体生成提示词
     """
-    def __init__(self):
-        self.strategy_col, self.record_col = self.load_or_build_collections()
+    def __init__(self, RAG=True):
+        self.RAG = RAG # 是否开启知识库检索功能
+        if self.RAG:
+            self.strategy_col, self.record_col = self.load_or_build_collections()
+        else:
+            self.strategy_col, self.record_col = None, None
         self.currentCard = None
         self.hand = None
         self.roundLog = None
@@ -150,7 +154,6 @@ class Prompt:
         combined_text = ""
         for i, doc in enumerate(filtered_docs):
             snippet = f"{i+1}. {doc}\n\n"
-            print(len(combined_text) + len(snippet))
             if len(combined_text) + len(snippet) > max_length:
                 break
             combined_text += snippet
@@ -163,8 +166,11 @@ class Prompt:
         self.currentCard, self.hand = currentCard, hand
         self.roundLog, self.fire_times = roundLog, fire_times
         self.playNum, self.selfName, self.chambers = playNum, selfName, chambers
-        full_context = self.generate_context(query_text=self.generate_query())
-        prompt = self.prompt_prepare(full_context)
+        if self.RAG: # 使用知识库检索
+            full_context = self.generate_context(query_text=self.generate_query())
+            prompt = self.prompt_prepare(full_context)
+        else:
+            prompt = self.prompt_prepare()
         return prompt
 
     def prompt_prepare(self, refer_inform="无相关信息"):
@@ -225,7 +231,7 @@ class Prompt:
                 - 出牌时的动作描述尽可能丰富、全面一点，小心动作会暴露自己的想法
                     - 若选择出牌但未出目标牌型，请生成一个动作来进行成功伪装；  
                     - 若选择质疑，请生成一个动作展现出自信、果断和怀疑气场。
-                    - 示例：（可以自由发挥）- 出牌时：“我微微低头，若无其事地丢出两张牌”  - 质疑时：“我提高音量，直视上家喊‘Liar!’”
+                    - 示例：（可以自由发挥）- 出牌时：“微微低头，若无其事地丢出两张牌”  - 质疑时：“故意提高音量，直视上家喊‘Liar!’”
                 - 给出的动作不要抄袭前面玩家！
             - reason: 中文，详细决策理由
                 例如：已知牌面信息、上家或其他玩家心理分析、自己手牌结构、剩余目标牌数、欺骗/真打的权衡、扣动扳机风险评估，等等内容不限制，可自由发挥    
@@ -261,7 +267,7 @@ def prompt_prepare_for_reals(action, cards, currentCard, roundLog, hand, playNum
         - playAction（需要你补充的内容）: 请补充一段动作描写，渲染出玩家在当前局势中的气场与表现。
             - 注意：仅可透露出牌数量（如“两张牌”），绝不可提及具体牌面或花色
             - 你的动作要尽可能夸张、丰富，不要被别人通过你的动作就判断出你出牌的真假 
-                示例：（可以自由发挥）- 出牌时：“我微微低头，若无其事地丢出两张牌”  - 质疑时：“我提高音量，直视上家喊‘Liar!’”
+                示例：（可以自由发挥）- 出牌时：“微微低头，若无其事地丢出两张牌”  - 质疑时：“故意提高音量，直视上家喊‘Liar!’”
             - 给出的动作不要抄袭前面玩家！
     """
     return prompt
