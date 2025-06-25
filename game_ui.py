@@ -4,7 +4,7 @@ import random
 import threading
 from revolver import Revolver
 from config import players
-from game_new import Game
+from llmLiarsBar.game_for_ui import Game
 from utils import Logger
 from player import *
 
@@ -18,7 +18,7 @@ class GameUI:
         # 游戏状态标志
         self.game_running = False
         self.round_ended = True
-        self.is_processing = False  # 处理中标志
+        self.is_processing = False  
         
         # 游戏实例
         self.game = Game(players, self)
@@ -35,7 +35,7 @@ class GameUI:
         """
         # 配置主窗口的网格权重，使中央区域能够扩展
         self.root.grid_rowconfigure(1, weight=1)
-        self.root.grid_rowconfigure(2, weight=3)  # 增加日志区域权重
+        self.root.grid_rowconfigure(2, weight=3)  
         self.root.grid_columnconfigure(0, weight=1)
         
         # 顶部信息区域
@@ -54,11 +54,11 @@ class GameUI:
         self.target_card_label = tk.Label(top_frame, text="当前目标牌: None", font=("Arial", 12), bg="#f0f0f0")
         self.target_card_label.grid(row=0, column=2, sticky="e", padx=10, pady=5)
         
-        # 中央游戏区域 - 使用 grid 布局确保对称性
+        # 中央游戏区域
         center_frame = tk.Frame(self.root)
         center_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
         
-        # 设置网格权重，使玩家区域和中央区域按比例分配空间
+        # 设置网格权重
         center_frame.grid_rowconfigure(0, weight=1)
         center_frame.grid_rowconfigure(1, weight=3)
         center_frame.grid_rowconfigure(2, weight=1)
@@ -131,7 +131,7 @@ class GameUI:
         self.loading_label = tk.Label(self.root, text="", font=("Arial", 10), fg="red")
         self.loading_label.grid(row=3, column=0, sticky="s", pady=5)
         
-        # 新增：输入框区域
+        # 输入框区域
         input_frame = tk.Frame(self.root, bg="#f0f0f0", relief=tk.SUNKEN, bd=1)
         input_frame.grid(row=5, column=0, sticky="ew", padx=10, pady=5)
         
@@ -144,6 +144,7 @@ class GameUI:
             font=("Arial", 12), bg="#4CAF50", fg="white", state=tk.DISABLED
         )
         self.submit_button.pack(side=tk.RIGHT, padx=5, pady=5)
+
     def init_game(self):
         """
         初始化游戏
@@ -167,8 +168,8 @@ class GameUI:
         if not self.game_running or self.game.gameOver or self.is_processing:
             return
             
-        self.round_ended = False  # 轮次开始，标记为未结束
-        self.is_processing = True  # 处理中
+        self.round_ended = False 
+        self.is_processing = True  
         self.next_round_button.config(state=tk.DISABLED)  # 禁用按钮
         self.status_label.config(text="轮次进行中...")
         self.loading_label.config(text="加载中...")
@@ -316,7 +317,7 @@ class GameUI:
         self.log_action(f"玩家输入: {user_input}")
         
         current_player = self.game.players[self.game.currentIndex]
-        action = current_player.parse_action_input(user_input)  # 使用RealPlayer的解析方法
+        action = current_player.parse_action_input(user_input)  
         
         if not action:
             self.log_action("无效输入，请重新输入。")
