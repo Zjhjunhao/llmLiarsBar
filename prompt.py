@@ -7,6 +7,9 @@ from sentence_transformers import SentenceTransformer
 from chromadb.api.types import EmbeddingFunction
 
 class LocalSentenceTransformerEmbeddingFunction(EmbeddingFunction):
+    """
+    嵌入函数，将文本转化为向量
+    """
     def __init__(self, model_name='all-mpnet-base-v2', device='cuda'):
         self.model = SentenceTransformer(model_name)
         self.model.to(device)
@@ -14,7 +17,10 @@ class LocalSentenceTransformerEmbeddingFunction(EmbeddingFunction):
     def __call__(self, texts):
         return self.model.encode(texts, convert_to_numpy=True).tolist()
     
-class Prompt():
+class Prompt:
+    """
+    为智能体生成提示词
+    """
     def __init__(self):
         self.strategy_col, self.record_col = self.load_or_build_collections()
         self.currentCard = None
@@ -27,9 +33,10 @@ class Prompt():
         
     @staticmethod
     def load_or_build_collections(tip_path="cleaned_output/cleaned_tips.jsonl", record_path="cleaned_output/cleaned_cases.jsonl", db_dir: str = "chroma_db"):
-        # def local_embedding_func(texts):
-        #     return model.encode(texts, convert_to_numpy=True).tolist()
-        # local_ef = embedding_functions.ExternalEmbeddingFunction(func=local_embedding_func,  batch_size=32)
+        """
+        加载预先处理好的策略文件和对局数据文件，并使用嵌入函数，将二者转化为向量库便于查询
+        知识库会存储在 /chroma_db 文件夹下，只会生成一次
+        """
         local_ef = LocalSentenceTransformerEmbeddingFunction()
         # client = chromadb.Client(Settings(chroma_db_impl="duckdb+parquet", persist_directory=db_dir))
         client = chromadb.PersistentClient(path=db_dir)
@@ -72,19 +79,10 @@ class Prompt():
 
         return strategy_col, record_col
 
-    def generate_context(self, query_text, n_result=3, include=["documents", "distances", "metadatas"]):
-        case_res = self.record_col.query(query_texts=[query_text], n_results=n_result, include=include)
-        tip_res = self.strategy_col.query(query_texts=[query_text], n_results=n_result, include=include)
-        case_context = Prompt.build_context_from_results(case_res, default_msg="无相关对局记录")
-        tip_context = Prompt.build_context_from_results(tip_res, default_msg="无相关策略指导")
-        
-        full_context = (
-        "【对局记录相关信息】\n" + case_context + "\n\n" +
-        "【策略指导相关信息】\n" + tip_context)
-
-        return full_context 
-    
     def generate_query(self):
+        """
+        根据当前的对局信息（若有）以及自身的情况，构建一个用于查询的 query_text
+        """
         playCardTotal = self.roundLog[-1]["playCardTotal"] if self.roundLog else 0
         round_num = len(self.roundLog) + 1 if self.roundLog else 1
 
@@ -117,11 +115,26 @@ class Prompt():
         query_text += "当前局面是否适合出牌？若出牌，应如何出？是否有必要质疑上家？"
 
         return query_text
+    
+    def generate_context(self, query_text, n_result=3, include=["documents", "distances", "metadatas"]):
+        """
+        根据当前的情况（query_text），在两个向量库中进行查询，返回相关度最大的3个
+        """
+        case_res = self.record_col.query(query_texts=[query_text], n_results=n_result, include=include)
+        tip_res = self.strategy_col.query(query_texts=[query_text], n_results=n_result, include=include)
+        case_context = Prompt.build_context_from_results(case_res, default_msg="无相关对局记录")
+        tip_context = Prompt.build_context_from_results(tip_res, default_msg="无相关策略指导")
+        
+        full_context = (
+        "【对局记录相关信息】\n" + case_context + "\n\n" +
+        "【策略指导相关信息】\n" + tip_context)
 
+        return full_context 
+    
     @staticmethod
     def build_context_from_results(results, threshold=0.1, max_length=1500, default_msg="无相关信息"):  
         """
-        处理 ChromaDB 查询结果：
+        处理 ChromaDB 查询结果，将它们进行汇总，且设置一个相关度的限制
         """
         docs = results["documents"][0]
         distances = results["distances"][0]
@@ -144,6 +157,9 @@ class Prompt():
         return combined_text.strip()
     
     def final_prompt(self, currentCard, hand, roundLog, fire_times, playNum, selfName, chambers=6):
+        """
+        生成最终的 prompt （player中只需要运行该函数即可）
+        """
         self.currentCard, self.hand = currentCard, hand
         self.roundLog, self.fire_times = roundLog, fire_times
         self.playNum, self.selfName, self.chambers = playNum, selfName, chambers
@@ -217,6 +233,9 @@ class Prompt():
         return prompt
 
 def prompt_prepare_for_reals(action, cards, currentCard, roundLog, hand, playNum):
+    """
+    帮助人类玩家生成动作描述的智能体提示词
+    """
     roundlog = None
     if roundLog:  roundlog = roundLog[-1]
     else:  roundlog == "你是第一位玩家" # 上家的出牌

@@ -1,6 +1,9 @@
 import os, sys
 
 class Logger:
+    """
+    存储输出日志
+    """
     def __init__(self, filename: str, stream=sys.stdout):
         self.terminal = stream
         os.makedirs(os.path.dirname(filename), exist_ok=True)

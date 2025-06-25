@@ -140,6 +140,9 @@ class RealPlayer(Player):
                 "reason": "玩家主动出牌"}
         
     def parse_action_input(self, user_input: str) -> str:
+        """
+        根据玩家输入判断动作 play or question
+        """
         user_input = user_input.strip().lower()
 
         play_set = {'p', 'play', '出', '出牌', '1'}
@@ -153,6 +156,9 @@ class RealPlayer(Player):
             return None  # 表示无效输入
     
     def action_explaination(self, roundLog, currentCard, playNum, action, cards):
+        """
+        利用智能体生成对应的动作描述
+        """
         try:
             prompt_text = prompt_prepare_for_reals(action, cards, currentCard, roundLog, self.hand, playNum)
             message = [{"role": "system", "content": "你是一个聪明的卡牌游戏助手，正在协助人类玩家进行一场名为「骗子酒馆」的扑克牌博弈。"}, 

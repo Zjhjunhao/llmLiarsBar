@@ -149,7 +149,7 @@ class Game:
                 return 
             
             if self.palyCardLog is not None and self.palyCardLog['remainCard'] == 0:
-                self.playersinround.remove(self.palyCardLog['playerName']) # 上家牌出完且没有质疑，上家从该轮次中退出
+                self.remove_player(self.palyCardLog['playerName'])
 
             cards_played = len(action["cards"])
             self.roundCards += cards_played
@@ -194,6 +194,13 @@ class Game:
         self.ui.log_action("--- 游戏开始 ---")
         #self.RoundStart()  
         self.ui.root.update()  # 强制UI更新
+
+    def remove_player(self, player_name):
+        for player in self.players:
+            if player.name == player_name and player.type == "Palyer":
+                player.exit_round()
+        self.playersinround.remove(player_name)
+        return
 
     def save_logs(self, action):
         self.allRoundLog.append(action)
