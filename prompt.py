@@ -116,29 +116,28 @@ class Prompt:
 
         return query_text
     
-    def generate_context(self, query_text, n_result=3, include=["documents", "distances", "metadatas"]):
+    def generate_context(self, query_text, include=["documents", "distances", "metadatas"]):
         """
         根据当前的情况（query_text），在两个向量库中进行查询，返回相关度最大的3个
         """
-        case_res = self.record_col.query(query_texts=[query_text], n_results=n_result, include=include)
-        tip_res = self.strategy_col.query(query_texts=[query_text], n_results=n_result, include=include)
-        case_context = Prompt.build_context_from_results(case_res, default_msg="无相关对局记录")
-        tip_context = Prompt.build_context_from_results(tip_res, default_msg="无相关策略指导")
+        case_res = self.record_col.query(query_texts=[query_text], n_results=2, include=include)
+        tip_res = self.strategy_col.query(query_texts=[query_text], n_results=3, include=include)
+        case_context = Prompt.build_context_from_results(case_res, threshold=0.5, default_msg="无相关对局记录")
+        tip_context = Prompt.build_context_from_results(tip_res, threshold=0.9, default_msg="无相关策略指导")
         
         full_context = (
         "【对局记录相关信息】\n" + case_context + "\n\n" +
         "【策略指导相关信息】\n" + tip_context)
 
         return full_context 
-    
+
     @staticmethod
-    def build_context_from_results(results, threshold=0.1, max_length=1500, default_msg="无相关信息"):  
+    def build_context_from_results(results, threshold=0.5, max_length=1500, default_msg="无相关信息"):  
         """
         处理 ChromaDB 查询结果，将它们进行汇总，且设置一个相关度的限制
         """
         docs = results["documents"][0]
         distances = results["distances"][0]
-
         filtered_docs = []
         for doc, dist in zip(docs, distances):
             if dist <= threshold:
@@ -150,10 +149,10 @@ class Prompt:
         combined_text = ""
         for i, doc in enumerate(filtered_docs):
             snippet = f"{i+1}. {doc}\n\n"
+            print(len(combined_text) + len(snippet))
             if len(combined_text) + len(snippet) > max_length:
                 break
             combined_text += snippet
-
         return combined_text.strip()
     
     def final_prompt(self, currentCard, hand, roundLog, fire_times, playNum, selfName, chambers=6):

@@ -140,7 +140,10 @@ def parse_detailed_match_record(content, game_id):
                     }
 
                 player_actions[challenger]["challenge"] = not bool(no_flag)
-                player_actions[challenger]["challenge_reason"] = reason.strip()
+                cleaned_reason = reason.strip()
+                if "游戏结束" in cleaned_reason:
+                    cleaned_reason = cleaned_reason.split("游戏结束")[0].strip()
+                player_actions[challenger]["challenge_reason"] = cleaned_reason
 
             # 合并结果
             parsed.extend(player_actions.values())
@@ -149,8 +152,6 @@ def parse_detailed_match_record(content, game_id):
             print(f"⚠️ 跳过 Round {rounds[i]}，错误: {e}")
 
     return parsed
-
-
 
 # === 处理所有对局记录文件 ===
 def clean_records():
@@ -245,13 +246,13 @@ def compress_play_reasons(
     print(f"\n✅ play_reason 压缩完成！输出文件位于：{output_path}")
 
 # === 主程序入口 ===
-# if __name__ == "__main__":
-#     clean_records()
-compress_play_reasons(
-    input_path="cleaned_output/cleaned_cases.jsonl",
-    output_path="cleaned_output/compressed_cases.jsonl",
-    device=0  # 使用第一张 GPU；如想用 CPU 设置为 -1
-)
+if __name__ == "__main__":
+    clean_records()
+# compress_play_reasons(
+#     input_path="cleaned_output/cleaned_cases.jsonl",
+#     output_path="cleaned_output/compressed_cases.jsonl",
+#     device=0  # 使用第一张 GPU；如想用 CPU 设置为 -1
+# )
 # if __name__ == "__main__":
 #     clean_strategies()
 #     clean_records()
