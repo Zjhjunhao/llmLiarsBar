@@ -22,8 +22,12 @@ class Prompt:
     """
     为智能体生成提示词
     """
-    def __init__(self):
-        self.strategy_col, self.record_col = self.load_or_build_collections()
+    def __init__(self, RAG=True):
+        self.RAG = RAG # 是否开启知识库检索功能
+        if self.RAG:
+            self.strategy_col, self.record_col = self.load_or_build_collections()
+        else:
+            self.strategy_col, self.record_col = None, None
         self.currentCard = None
         self.hand = None
         self.roundLog = None
@@ -150,7 +154,6 @@ class Prompt:
         combined_text = ""
         for i, doc in enumerate(filtered_docs):
             snippet = f"{i+1}. {doc}\n\n"
-            print(len(combined_text) + len(snippet))
             if len(combined_text) + len(snippet) > max_length:
                 break
             combined_text += snippet
@@ -163,8 +166,11 @@ class Prompt:
         self.currentCard, self.hand = currentCard, hand
         self.roundLog, self.fire_times = roundLog, fire_times
         self.playNum, self.selfName, self.chambers = playNum, selfName, chambers
-        full_context = self.generate_context(query_text=self.generate_query())
-        prompt = self.prompt_prepare(full_context)
+        if self.RAG: # 使用知识库检索
+            full_context = self.generate_context(query_text=self.generate_query())
+            prompt = self.prompt_prepare(full_context)
+        else:
+            prompt = self.prompt_prepare()
         return prompt
 
     def prompt_prepare(self, refer_inform="无相关信息"):
