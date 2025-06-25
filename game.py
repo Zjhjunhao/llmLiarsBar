@@ -54,7 +54,11 @@ class Game:
         self.roundLog = []
         self.roundCards = 0
         self.palyCardLog = None
-        self.playersinround = [player.name for player in self.players]
+        
+        self.playersinround = set()
+        for player in self.players:
+            if not player.is_out:
+                self.playersinround.add(player.name)
 
         self.currentCards = self.Cards.copy()
         random.shuffle(self.currentCards)
