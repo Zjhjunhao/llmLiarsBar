@@ -6,35 +6,39 @@ import chromadb
 from prompt import *
 
 class Player:
-    def __init__(self, name, model, client:OpenAI, prompt:Prompt, type="Agent"):
+    def __init__(self, name, model, client:OpenAI, prompt, type="Agent",):
         self.type = type
         self.name = name        
         self.model = model
         self.hand = []
         self.revolver = Revolver()  
+        self.revolver_state = None
         self.is_out = False
         self.last_play = None
         self.client:OpenAI = client
         self.prompt = prompt
-        self.role, self.role_usage_left = None, 0
-    
-    def BuildPrompt(self, currentCard, roundLog, hand, playNum):
+        self.role = None
+        self.mode = "common"  # 此处可以替换为 role
+     
+    def BuildPrompt(self, currentCard, roundLog, hand, playNum, canQuestion=True):
         """构建大模型提示词"""
         #需要解释一下游戏规则
         prompt = self.prompt.final_prompt(currentCard, hand, roundLog, self.revolver.fire_times, playNum, self.name)
+        if self.mode == "role":
+            self.prompt.add_role_prompt(self.role, canQuestion=canQuestion)
         return [
             {"role": "system", "content": "你是一个专业的卡牌游戏玩家，请根据游戏规则做出最佳决策。"},
             {"role": "user", "content": prompt}
         ]
 
-    def PlayCard(self, roundLog, currentCard, playNum):
+    def PlayCard(self, roundLog, currentCard, playNum, canQuestion=True):
         """
         调用大模型决策行动
         roundLog: 轮次信息
         currentCard: 当前需要出的牌
         """
         try:
-            messages = self.BuildPrompt(currentCard, roundLog, self.hand, playNum)
+            messages = self.BuildPrompt(currentCard, roundLog, self.hand, playNum, canQuestion)
             response = self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
@@ -91,12 +95,11 @@ class RealPlayer(Player):
         # 这里的 client 和 prompt 是辅助生成完整 json的 
         super().__init__(name, model, client, prompt, type)
     
-    def PlayCard(self, roundLog, currentCard, playNum):
+    def PlayCard(self, roundLog, currentCard, playNum, canQuestion=True):
         import inspect
         stack = inspect.stack()
         caller_self = stack[1].frame.f_locals.get('self')
         caller_class = caller_self.__class__.__name__ if caller_self else None
-        print(caller_class)
         if caller_class == "GameUI":
             return {
                 "type": "",
@@ -105,8 +108,12 @@ class RealPlayer(Player):
                 "playAction": "",
                 "reason": ""
             }
-        elif caller_class == "Game":
+        elif caller_class == "Game" or caller_class == "GamewithRoles":
             print(f"\n---- 玩家 {self.name} 的回合 ----")
+            print(f"本次游戏模式为{self.mode}\n")
+            if self.mode == "role":
+                print(f"你本局的角色是【{self.role.name}】\n"
+                    f"本轮已触发 {self.role.used_this_round} 次，累计触发 {self.role.used_total} 次\n")
             print(f"当前需要出的牌: {currentCard}")
             print(f"你的手牌为:")
             for idx, card in enumerate(self.hand):
@@ -115,11 +122,16 @@ class RealPlayer(Player):
             else: print("你是第一位玩家")
             print(f"你已经开枪次数：{self.revolver.fire_times}")
             while True:
-                if roundLog: 
+                if roundLog and canQuestion: 
                     raw_input_value = input("请选择操作（出牌/play/p/1 或 质疑/question/q/2）：")
+                    action = self.parse_action_input(raw_input_value)
                 else:
+                    if not canQuestion:
+                        print("你的上家是审问者并在本轮成功发动技能，因此你本回合只能选择出牌，无法选择质疑")
                     raw_input_value = input("请选择操作（出牌/play/p/1）：")
-                action = self.parse_action_input(raw_input_value)
+                    action = self.parse_action_input(raw_input_value)
+                    if action == "question":
+                        print("无效输入，你在本轮只能选择出牌")
                 if action:
                     break
                 print("无效输入，请重新输入。")

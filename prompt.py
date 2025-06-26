@@ -5,6 +5,7 @@ import os, torch
 import json, chromadb
 from sentence_transformers import SentenceTransformer
 from chromadb.api.types import EmbeddingFunction
+from role import *
 
 class LocalSentenceTransformerEmbeddingFunction(EmbeddingFunction):
     """
@@ -18,7 +19,7 @@ class LocalSentenceTransformerEmbeddingFunction(EmbeddingFunction):
     def __call__(self, texts):
         return self.model.encode(texts, convert_to_numpy=True).tolist()
     
-class Prompt:
+class Prompt():
     """
     为智能体生成提示词
     """
@@ -35,6 +36,9 @@ class Prompt:
         self.playNum = None
         self.selfName = None
         self.chambers = None
+        self.mode = "common"
+        self.role = None
+        self.canQuestion = True
         
     @staticmethod
     def load_or_build_collections(tip_path="cleaned_output/cleaned_tips.jsonl", record_path="cleaned_output/cleaned_cases.jsonl", db_dir: str = "chroma_db"):
@@ -173,6 +177,11 @@ class Prompt:
             prompt = self.prompt_prepare()
         return prompt
 
+    def add_role_prompt(self, role:Role, canQuestion=True):
+        self.mode = "role"
+        self.role = role
+        self.canQuestion = canQuestion
+
     def prompt_prepare(self, refer_inform="无相关信息"):
         """准备大模型提示词"""
         refer_info_text = (
@@ -181,6 +190,32 @@ class Prompt:
             f"{refer_inform}"
             if refer_inform != "无相关信息"
             else "")
+        
+        if self.mode == "role":
+            role_mode_text = (
+                f"【特殊玩法：角色机制】\n"
+                f"本局在传统骗子酒馆玩法基础上引入了 5 种特殊角色，"
+                f"玩家开局随机获得一个，全局不变。\n"
+                f"每个角色技能都有 30% 概率触发，每轮最多 1 次，累积最多 2 次，均为被动触发。\n"
+                f"角色技能说明：\n"
+                f"- 魔术师：出牌时，有 30% 概率将一张非目标牌视为目标牌\n"
+                f"- 审问者：出牌后，有 30% 概率让下家无法质疑\n"
+                f"- 赌徒：若被击中阵亡，有 30% 概率反杀射击者（若不是最后一人）\n"
+                f"- 装弹师：开枪未命中后，有 30% 概率改变子弹位置\n"
+                f"- 预言家：每轮开始时，有 30% 概率知晓本轮子弹位置\n"
+                f"你本局的角色是【{self.role.name}】，"
+                f"本轮已触发 {self.role.used_this_round} 次，累计触发 {self.role.used_total} 次\n"
+                f"请不要主动暴露你的角色，尽管有的时候会被其他玩家猜到。")
+            if self.role.name == "预言家" and "revolver_state" in self.role.message:
+                state = self.role.message["revolver_state"]
+                role_mode_text += (
+                    f"你的预言家技能成功触发，本局游戏中你的手枪弹针位置/子弹位置为 {state[0]}/{state[1]}")
+            if not self.canQuestion:
+                role_mode_text += (
+                    f"\n上家是审问者并本轮成功发动技能，你本回合只能选择出牌（play），无法选择质疑（question）")
+        else:
+            role_mode_text = ""
+
         prompt = f"""你是“骗子酒馆”扑克模式的玩家，目标是生存到最后。请根据当前信息做出最佳决策。
 
         【游戏核心规则】
@@ -192,6 +227,8 @@ class Prompt:
                 - 一轮中有玩家质疑，无论质疑是否成功，该轮游戏结束
             - 若玩家在一轮中出完所有的手牌，自动退出该轮次；轮次中剩下的最后一个需要扣动左轮扳机
             - 游戏胜利条件为最后剩一人。
+
+        {role_mode_text}
 
         【当前信息】
             - 本轮目标牌：`{self.currentCard}`
@@ -215,7 +252,7 @@ class Prompt:
             - 出牌：
                 - 出牌的时候可以适当打出非目标牌来迷惑对手并保护目标牌和Joker；不要将目标牌一次性打出；尽量不要把目标牌和非目标牌一同打出；
             - 质疑：
-                - 多观察一些出牌情况后再选择质疑，不要在每轮第一或第二位玩家时就立刻质疑，；  
+                - 多观察一些出牌情况后再选择质疑，不要在每轮第一或第二位玩家时就立刻质疑；  
                 - 根据已开枪次数合理评估质疑风险，开枪次数较少时，质疑风险低，可适度大胆。
                 - 当察觉上家出牌情况异常/上家剩余手牌数为 0 /自己当前不好出牌的时候，可以进行质疑。
             - 本轮出牌总数具有一定的欺骗性，可以作为参考判断上家是否欺骗    
@@ -224,7 +261,7 @@ class Prompt:
         {refer_info_text}
         
         【输出格式 JSON】
-            - action: "play" 或 "question"
+            - action: "play" 或 "question" 
             - cards: 选中手牌索引数组（play时）
             - playAction: 出牌或质疑时的动作描述     
                 - 注意：仅可透露出牌数量（如“两张牌”），绝不可提及具体牌面或花色
