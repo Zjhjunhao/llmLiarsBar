@@ -181,15 +181,7 @@ def seer_peek_bullet(game, player):
             else:
                 if not game.ui.hide_other_info:
                     game.ui.log_action(f"{player.name} 尝试触发预言家技能，但未能预知弹针与子弹。")
-        if not game.hasRealPlayer:
-            if game.version == "shell":
-                print(f"{player.name} 尝试触发 🔍 预言家技能，但未能预知弹针与子弹。")
-            elif game.version == "ui":
-                if not game.ui.hide_other_info:
-                    print(f"{player.name} 尝试触发 🔍 预言家技能，但未能预知弹针与子弹。")
-                else:
-                    game.ui.log_action(f"[信息已屏蔽]")
-        return
+        return False
 
 def get_defined_roles():
     """Game类中调用，返回所有的角色信息"""
@@ -224,9 +216,9 @@ def get_defined_roles():
         ),
         Role(
             name="预言家",
-            description="游戏开始时90%概率提前知道自己的弹针和子弹的位置",
+            description="游戏开始时提前知道自己的弹针和子弹的位置",
             effect=seer_peek_bullet,
-            trigger_chance=0.9,
+            trigger_chance=1,
             max_uses_per_round=1,
         ),
     ]

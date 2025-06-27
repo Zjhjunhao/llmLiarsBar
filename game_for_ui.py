@@ -228,6 +228,33 @@ class GamewithRole(Game):
         self.roles_pool = get_defined_roles()
         self.assign_roles_once()
 
+    def RoundStart(self):
+        """
+        轮次开始
+        """
+        self.gameRound += 1
+        self.playLog.append(self.roundLog)
+        self.roundLog = []
+        self.roundCards = 0
+        self.palyCardLog = None
+        
+        # 确定本轮参与的玩家
+        self.playersinround = set()
+        for player in self.players:
+            if not player.is_out:
+                self.playersinround.add(player.name)
+                player.role.reset_round()
+        
+        self.currentCards = self.Cards.copy()
+        random.shuffle(self.currentCards)
+        self.currentCard = random.choice(["K", "Q", "A"])
+        self.giveCards()
+        
+        self.roundOver = False
+        self.ui.log_action(f"\n--- 新轮次: {self.gameRound} ---")
+        self.ui.log_action(f"--- 目前幸存玩家：" + " | ".join(self.playersinround) + " ---")
+        self.ui.log_action(f"--- 本轮目标牌: {self.currentCard} ---")
+
     def assign_roles_once(self):
         """
         游戏开始前固定分配角色，角色在整局游戏中不变

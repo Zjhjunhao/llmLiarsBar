@@ -28,7 +28,7 @@ pip install -r requirements.txt
 - `Player`：由大语言模型控制的智能体玩家；
 - `RealPlayer`：真实用户控制的玩家接口。
 
-### `game_new.py` & `game_ui.py`
+### `game_for_ui.py` & `game_ui.py`
 - `Game`：封装核心游戏逻辑（如发牌、回合控制、规则判断等）；
 - `GameUI`：使用 tkinter 实现图形用户界面，实时可视化游戏过程。
 
@@ -47,10 +47,14 @@ pip install -r requirements.txt
 - 存储玩家信息配置（包括真实玩家与智能体）；
 - 配置用于调用 LLM 的 OpenAI API 客户端参数。
 
-### `data_clean.py`
-- 包含工具函数用于清洗游戏过程中的记录与策略数据；
-- 支持将数据导出为结构化 `jsonl` 格式；
-- 本模块不参与游戏运行，仅用于后期分析。
+### `role.py`
+- 包含Role类，用于存储新玩法中的角色信息，存放在Player类中
+- 包含了所有角色的触发函数，且会根据不同的情况的触发，产生不同形式的输出，方便玩家理解场上情况
+
+### `utils.py`
+- 包含用于记录终端输出的Logger类和清洗游戏过程中用到的工具函数；
+- 工具函数支持将对局记录与策略数据导出为结构化 `jsonl` 格式，且不参与游戏运行。
+
 
 ---
 
@@ -67,7 +71,7 @@ python game.py common
 启动职业模式
 ```
 python game_ui.py role
-python game.py common
+python game.py role
 ```
 
 2. 系统自动读取 `config.py` 中的玩家配置信息，你可以在该文件下修改AI玩家模型，可以选择加入RealPlayer类玩家参与游戏；

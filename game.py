@@ -208,7 +208,7 @@ class GamewithRoles(Game):
         self.roundCards = 0
         self.palyCardLog = None
 
-        self.playersinround = {p.name for p in self.players if not p.is_out}
+        self.playersinround = {p.name for p in self.players}
 
         self.currentCards = self.Cards.copy()
         random.shuffle(self.currentCards)
