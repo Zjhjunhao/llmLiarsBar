@@ -7,8 +7,8 @@ from config import players
 from game_for_ui import *
 from utils import Logger
 from player import *
-import sys
 
+ROLE = True
 
 class GameUI:
     def __init__(self, root):
@@ -167,9 +167,7 @@ class GameUI:
         self.submit_button.pack(side=tk.RIGHT, padx=5, pady=5)
 
     def toggle_hide_info(self):
-        """
-        切换信息屏蔽状态
-        """
+        """切换信息屏蔽状态"""
         self.hide_other_info = self.hide_info_var.get()
         status_text = "已启用" if self.hide_other_info else "已禁用"
         self.status_label.config(text=f"屏蔽玩家信息: {status_text}")
@@ -233,10 +231,10 @@ class GameUI:
             return
                 
         playerNum = len(self.game.players)
-        alive_players = [p for p in self.game.players if not p.is_out and p.name in self.game.playersinround]
+        active_players = [p for p in self.game.players if not p.is_out and p.name in self.game.playersinround]
         
-        # 如果没有存活玩家，结束轮次live
-        if not alive_players:
+        # 如果没有活跃玩家，结束轮次
+        if not active_players:
             self.game.roundOver = True
             self.root.after(0, self.on_round_complete)
             return
@@ -244,7 +242,7 @@ class GameUI:
         # 获取当前玩家
         current_player = self.game.players[self.game.currentIndex]
         
-        # 如果当前玩家已淘汰，找到下一个存活玩家
+        # 如果当前玩家不活跃，找到下一个活跃玩家
         if current_player.is_out or current_player.name not in self.game.playersinround:
             self.game.currentIndex = (self.game.currentIndex + 1) % playerNum
             while self.game.players[self.game.currentIndex].is_out or self.game.players[self.game.currentIndex].name not in self.game.playersinround:
@@ -253,12 +251,11 @@ class GameUI:
         
         # 处理玩家行动
         #self.process_player_turn_in_thread(current_player)
-         # 真实玩家
-        if isinstance(current_player, RealPlayer): 
+
+        if isinstance(current_player, RealPlayer):  # 真实玩家
             self.real_player_turn = True
             self.enable_input(current_player)
-        # AI玩家
-        else:  
+        else:  # AI玩家
             self.process_player_turn_in_thread(current_player)
 
     def process_player_turn_in_thread(self, player):
@@ -353,7 +350,7 @@ class GameUI:
         current_player = self.game.players[self.game.currentIndex]
         action = current_player.parse_action_input(user_input)  
         
-        if action is None:
+        if action is None or (action == "question" and  not self.game.roundLog):
             self.log_action("无效输入，请重新输入。")
             return
         
@@ -439,9 +436,7 @@ class GameUI:
             self.handle_play_action(self.current_player)
     
     def generate_action_description_in_thread(self, roundLog, hand, playNum, cards):
-        """
-        在后台线程中生成动作描述
-        """
+        """在后台线程中生成动作描述"""
         try:
             # 调用action_explaination生成动作描述
             playaction = self.current_player.action_explaination(roundLog, hand, playNum, self.current_action, cards)
@@ -456,9 +451,7 @@ class GameUI:
             self.is_generating_action = False
 
     def set_play_action(self, playaction):
-        """
-        设置动作描述并继续游戏
-        """
+        """设置动作描述并继续游戏"""
         if not hasattr(self, 'current_action'):
             return
             
@@ -479,7 +472,6 @@ class GameUI:
         self.real_player_turn = False
         self.loading_label.config(text="")
         self.root.after(1000, self.run_current_round)
-        self.input_entry.bind("<Return>", self.on_input_submit) 
 
     def handle_question_action(self, player):
         """
@@ -655,12 +647,6 @@ class GameUIwithRole(GameUI):
             if player.role and player.role.name == "魔术师":
                 player.role.try_trigger(self.game, player)
             
-            if player.role and player.role.name == "审问者": 
-                can_question = not player.role.try_trigger(self.game, player)
-                self.canQuestion = can_question
-            else: 
-                self.canQuestion = True
-            
             # 记录玩家当前手牌（在主线程中更新）
             current_hand = player.hand.copy()
             self.root.after(0, lambda: self.log_action(f"--- {player.name}的手牌: {current_hand} ---"))
@@ -673,6 +659,12 @@ class GameUIwithRole(GameUI):
             
             # 处理玩家动作
             self.game.process_action(action)
+
+            if player.role and player.role.name == "审问者":  # 审问者技能触发
+                can_question = not player.role.try_trigger(self.game, player)
+                self.canQuestion = can_question
+            else: 
+                self.canQuestion = True
             
             # 更新UI（在主线程中更新）
             self.root.after(0, self.update_player_cards)
@@ -693,63 +685,6 @@ class GameUIwithRole(GameUI):
             # 继续下一个玩家（在主线程中调度）
             self.root.after(1000, self.run_current_round)  # 延迟1秒，便于观察
 
-    def on_play_cards_submit(self, event):
-        """
-        处理出牌索引输入
-        """
-        card_indexes = self.input_entry.get().strip()
-        self.input_entry.delete(0, tk.END)  # 清空输入框
-
-        try:
-            cards = [int(i) for i in card_indexes.split()]
-            # print(f"输入的索引: {cards}")
-            # print(f"当前玩家手牌: {self.current_player.hand}")
-            
-            # 检查索引有效性
-            if not all(0 <= i < len(self.current_player.hand) for i in cards):
-                self.log_action("错误：输入的索引超出手牌范围")
-                self.handle_play_action(self.current_player)
-                return
-                
-            # 检查卡牌数量
-            if not (1 <= len(cards) <= 3):
-                self.log_action("错误：请选择1-3张牌")
-                self.handle_play_action(self.current_player)
-                return
-                
-            # 检查是否有重复索引
-            if len(cards) != len(set(cards)):
-                self.log_action("错误：不能选择重复的牌")
-                self.handle_play_action(self.current_player)
-                return
-            
-            self.log_action(f"玩家输入索引: {cards}") 
-            self.log_action(f"对应{[self.current_player.hand[card] for card in cards]}")
-
-            # 调用RealPlayer的PlayCard方法
-            action = self.current_player.PlayCard(self.game.roundLog, self.game.currentCard, len(self.game.players), canQuestion=self.canQuestion)
-            
-            # 确保action包含必要的键
-            if "cards" not in action:
-                action["cards"] = []
-            if "type" not in action:
-                action["type"] = "play"
-            action["cards"] = cards
-            action["type"] = "play"
-
-            self.current_action = action
-            self.selected_cards = cards  # 保存选中的卡牌索引
-
-            threading.Thread(
-                target=self.generate_action_description_in_thread,
-                args=(self.game.roundLog, self.current_player.hand, len(self.game.players), cards),
-                daemon=True
-            ).start()
-
-        except ValueError:
-            self.log_action("错误：请输入有效的数字索引")
-            self.handle_play_action(self.current_player)
-
     def enable_input(self, player):
         """
         启用输入功能
@@ -763,6 +698,10 @@ class GameUIwithRole(GameUI):
         self.input_entry.delete(0, tk.END)
         self.input_entry.bind("<Return>", self.on_input_submit)
         self.submit_button.config(command=self.on_input_submit)
+
+        # 魔术师技能触发
+        if player.role and player.role.name == "魔术师":
+            player.role.try_trigger(self.game, player)
 
         self.log_action(f"本次游戏模式为 Role")
         self.log_action(f"你本局的角色是【{player.role.name}】\n"
@@ -782,19 +721,67 @@ class GameUIwithRole(GameUI):
                 self.log_action("你的上家是审问者并在本轮成功发动技能，因此你本回合只能选择出牌，无法选择质疑")
             self.log_action("请输入操作（出牌/play/p/1）：")
 
+    def on_input_submit(self, event=None):
+        """
+        处理输入提交
+        """
+        if not self.input_enabled:
+            return
+            
+        user_input = self.input_entry.get().strip().lower()
+        self.input_entry.delete(0, tk.END)  # 清空输入框      
+        
+        current_player = self.game.players[self.game.currentIndex]
+        action = current_player.parse_action_input(user_input)  
+        
+        if action is None or (action == "question" and  not self.game.roundLog) or (action == "question" and  not self.game.roundLog):
+            self.log_action("无效输入，请重新输入。")
+            return
+        
+        self.log_action(f"玩家输入: {user_input}")  
+
+        # 处理出牌操作
+        if action == "play":
+            self.handle_play_action(current_player)
+        # 处理质疑操作
+        elif action == "question":
+            self.handle_question_action(current_player)
+
+    def set_play_action(self, playaction):
+        """设置动作描述并继续游戏"""
+        if not hasattr(self, 'current_action'):
+            return
+            
+        # 设置动作描述
+        self.current_action["playAction"] = playaction
+        
+        # 处理玩家动作
+        self.game.process_action(self.current_action)
+
+        # 审问者技能触发
+        if self.current_player.role and self.current_player.role.name == "审问者":  
+            can_question = not self.current_player.role.try_trigger(self.game, self.current_player)
+            self.canQuestion = can_question
+        else: 
+            self.canQuestion = True
+
+        # 从手牌中移除已选卡牌
+        for i in sorted(self.selected_cards, reverse=True):
+            if i < len(self.current_player.hand):
+                self.current_player.hand.pop(i)
+        
+        self.log_action(f"--- {self.current_player.name} 出牌: {self.current_action}---")
+        self.update_player_cards()
+        self.disable_input()
+        self.real_player_turn = False
+        self.loading_label.config(text="")
+        self.root.after(1000, self.run_current_round)
 
 
 if __name__ == "__main__":
     root = tk.Tk()
-    
-    arg = "common"  
-    if len(sys.argv) > 1:
-        arg = sys.argv[1].lower()
-    
-
-    if arg == "role":
+    if ROLE:
         ui = GameUIwithRole(root)
-    else: 
+    else:
         ui = GameUI(root)
-    
     root.mainloop()
