@@ -3,7 +3,6 @@ from revolver import Revolver
 from player import *
 from config import players
 from utils import Logger
-from role_effects import *
 from role import *
 
 
