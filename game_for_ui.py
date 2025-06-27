@@ -118,8 +118,8 @@ class Game:
             
             if is_lying:
                 self.ui.log_action("--- 质疑成功 ---")
-                self.currentIndex = i % len(self.players)
-                self.lastLossPlayer = i % len(self.players)
+                self.currentIndex = prev_index
+                self.lastLossPlayer = prev_index
                 if lastPlayer.revolver.fire():
                     self.ui.log_action(f"--- {lastPlayer.name} 中弹出局 ---")
                     lastPlayer.is_out = True
@@ -128,8 +128,8 @@ class Game:
 
             else:
                 self.ui.log_action("--- 质疑失败 ---")
-                self.currentIndex = prev_index
-                self.lastLossPlayer = prev_index
+                self.currentIndex = i % len(self.players)
+                self.lastLossPlayer = i % len(self.players)
                 if player.revolver.fire():
                     self.ui.log_action(f"--- {player.name} 中弹出局 ---")
                     player.is_out = True
