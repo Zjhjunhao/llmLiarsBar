@@ -9,6 +9,7 @@ from role import *
 
 class Game:
     def __init__(self, players, file_name=r"role"):
+        self.version = "shell"
         # 初始化牌组
         self.Cards = ["K"]*6 + ["Q"]*6 + ["A"]*6 + ["Joker"]*2
         self.currentCard = None
@@ -25,7 +26,7 @@ class Game:
         self.currentIndex = 0
         self.winner = None
         self.gameOver = False
-        self.lastLossPlayer = random.randint(1,4)
+        self.lastLssPlayer = random.randint(1,4)
         self.roundOver = False
         self.palyCardLog = None
 
@@ -107,8 +108,8 @@ class Game:
                             print("---Question success---")
                             if lastPlayer.revolver.fire():
                                 print(f"---Fire success, {lastPlayer.name} die---")
-                                self.players.pop((i + self.lastLossPlayer - 1)%playerNum)
-                                self.lastLossPlayer = max(0, (i + self.lastLossPlayer)%playerNum-1) # index 移动一位
+                                self.players.remove(lastPlayer)
+                                self.lastLossPlayer = max(0, (i + self.lastLossPlayer)%playerNum - 1) # index 移动一位
                             else:
                                 print(f"---Fire fial, {lastPlayer.name} still alive---")
                                 self.lastLossPlayer = (i + self.lastLossPlayer)%playerNum
@@ -117,11 +118,11 @@ class Game:
                             print("---Question fail---")
                             if player.revolver.fire():
                                 print(f"---Fire success, {player.name} die---")
-                                self.players.pop((i + self.lastLossPlayer)%playerNum)
-                                self.lastLossPlayer = min(playerNum-2, (i + self.lastLossPlayer)%playerNum-1)
+                                self.players.remove(player)
+                                self.lastLossPlayer = min(playerNum-2, prev_index)
                             else:
                                 print(f"---Fire fial, {player.name} still alive---")
-                                self.lastLossPlayer = (i + self.lastLossPlayer - 1)%playerNum
+                                self.lastLossPlayer = prev_index
                             self.roundOver = True
                         break
                     else:
@@ -129,10 +130,11 @@ class Game:
                             print(f"---Others has played all cards--")
                             if player.revolver.fire():
                                 print(f"---Fire success, {player.name} die---")
-                                self.players.pop((i + self.lastLossPlayer)%playerNum)
+                                self.players.remove(player)
+                                self.lastLossPlayer = min(len(players), (i + self.lastLossPlayer) % playerNum)
                             else:
                                 print(f"---Fire fial, {player.name} still alive---")
-                            self.lastLossPlayer = (i + self.lastLossPlayer)%playerNum
+                                self.lastLossPlayer = (i + self.lastLossPlayer)%playerNum
                             self.roundOver = True
                             break
                         if self.palyCardLog is not None and self.palyCardLog['remainCard'] == 0:
@@ -152,13 +154,7 @@ class Game:
             if len(self.players) == 1:
                 self.winner = self.players[0]
                 self.gameOver = True
-            if len(self.players) == 0:
-                self.winner = None
-                self.gameOver = True
-        if self.winner is None:
-            print(f"---Game Over---\n ---Everyone perishes together, no one is spared!---")
-        else:
-            print(f"---Game Over---\n ---Winner is {self.winner.name}!---")
+        print(f"---Game Over---\n ---Winner is {self.winner.name}!---")
 
     def save_logs(self, action):
         self.allRoundLog.append(action)
@@ -238,9 +234,9 @@ class GamewithRoles(Game):
             
             while not self.roundOver:
                 playerNum = len(self.players)
-                for i in range(playerNum):
+                for i in range(playerNum):# 上家
                     prev_index = (i + self.lastLossPlayer - 1) % playerNum
-                    while self.players[prev_index].is_out or self.players[prev_index].name not in self.playersinround:
+                    while self.players[prev_index].name not in self.playersinround:
                         prev_index = (prev_index - 1) % playerNum
                     lastPlayer = self.players[prev_index]
                     player = self.players[(i + self.lastLossPlayer) % playerNum]
@@ -268,10 +264,14 @@ class GamewithRoles(Game):
                                 # 赌徒技能（反杀）
                                 if lastPlayer.role and lastPlayer.role.name == "赌徒":
                                     if len(self.playersinround) > 1:
-                                        lastPlayer.role.try_trigger(self, lastPlayer, player)
+                                        counter = lastPlayer.role.try_trigger(self, lastPlayer, player)
+                                        if counter:
+                                            self.players.remove(player)
+                                            self.lastLossPlayer = max(0, (i + 1 + self.lastLossPlayer) % playerNum - 2)
+                                        else:
+                                            self.lastLossPlayer = max(0, (i + self.lastLossPlayer) % playerNum - 1)                                                                     
 
-                                self.players.pop(prev_index)
-                                self.lastLossPlayer = max(0, (i + self.lastLossPlayer) % playerNum - 1)
+                                self.players.remove(lastPlayer)
                             else:
                                 print(f"---Fire fail, {lastPlayer.name} survives---")
 
@@ -289,10 +289,14 @@ class GamewithRoles(Game):
                                 # 赌徒技能（反杀）
                                 if player.role and player.role.name == "赌徒":
                                     if len(self.playersinround) > 1:
-                                        player.role.try_trigger(self, player, lastPlayer)
-
-                                self.players.pop((i + self.lastLossPlayer) % playerNum)
-                                self.lastLossPlayer = min(playerNum - 2, (i + self.lastLossPlayer) % playerNum - 1)
+                                        counter = player.role.try_trigger(self, player, lastPlayer)
+                                        if counter:
+                                            self.players.remove(lastPlayer)
+                                            self.lastLossPlayer = max(0, (i + 1 + self.lastLossPlayer) % playerNum - 2) # 下家
+                                        else:
+                                            self.lastLossPlayer = min(playerNum-2, prev_index) # 上家
+                                self.players.remove(player)
+                                
                             else:
                                 print(f"---Fire fail, {player.name} survives---")
 
@@ -300,7 +304,7 @@ class GamewithRoles(Game):
                                 if player.role and player.role.name == "装弹师":
                                     player.role.try_trigger(self, player)
 
-                                self.lastLossPlayer = (i + self.lastLossPlayer - 1) % playerNum
+                                self.lastLossPlayer = prev_index # 上家
                             self.roundOver = True
                         break
                        
@@ -312,15 +316,15 @@ class GamewithRoles(Game):
                             print(f"---Others have played all cards---")
                             if player.revolver.fire():
                                 print(f"---Fire success, {player.name} dies---")
-                                self.players.pop((i + self.lastLossPlayer) % playerNum)
+                                self.players.remove(player)
+                                self.lastLossPlayer = min(len(players), (i + self.lastLossPlayer) % playerNum)
                             else:
                                 print(f"---Fire fail, {player.name} survives---")
-
+                                self.lastLossPlayer = (i + self.lastLossPlayer) % playerNum
                                 # 装弹师技能
                                 if player.role and player.role.name == "装弹师":
                                     player.role.try_trigger(self, player)
 
-                            self.lastLossPlayer = (i + self.lastLossPlayer) % playerNum
                             self.roundOver = True
                             break
 
@@ -339,7 +343,13 @@ class GamewithRoles(Game):
             if len(self.players) == 1:
                 self.winner = self.players[0]
                 self.gameOver = True
-        print(f"---Game Over---\n ---Winner is {self.winner.name}!---")
+            if len(self.players) == 0:
+                self.winner = None
+                self.gameOver = True
+        if self.winner is None:
+            print(f"---Game Over---\n ---Everyone perishes together, no one is spared!---")
+        else:
+            print(f"---Game Over---\n ---Winner is {self.winner.name}!---")
 
 if __name__ == "__main__":
     game = GamewithRoles(players)

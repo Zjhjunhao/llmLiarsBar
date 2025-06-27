@@ -100,7 +100,7 @@ class RealPlayer(Player):
         stack = inspect.stack()
         caller_self = stack[1].frame.f_locals.get('self')
         caller_class = caller_self.__class__.__name__ if caller_self else None
-        if caller_class == "GameUI":
+        if caller_class == "GameUI" or caller_class == "GameUIwithRole":
             return {
                 "type": "",
                 "cards": [],
@@ -114,6 +114,9 @@ class RealPlayer(Player):
             if self.mode == "role":
                 print(f"你本局的角色是【{self.role.name}】\n"
                     f"本轮已触发 {self.role.used_this_round} 次，累计触发 {self.role.used_total} 次\n")
+                if self.role.name == "预言家" and "revolver_state" in self.role.message:
+                    state = self.role.message["revolver_state"]
+                    print(f"你的预言家技能成功触发，本局游戏中你的初始手枪弹针位置/子弹位置为 {state[0]}/{state[1]}")
             print(f"当前需要出的牌: {currentCard}")
             print(f"你的手牌为:")
             for idx, card in enumerate(self.hand):

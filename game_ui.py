@@ -4,7 +4,7 @@ import random
 import threading
 from revolver import Revolver
 from config import players
-from game_for_ui import Game
+from game_for_ui import *
 from utils import Logger
 from player import *
 
@@ -23,6 +23,9 @@ class GameUI:
         
         # 游戏实例
         self.game = Game(players, self)
+
+        if self.game.hasRealPlayer:
+            self.hide_other_info = True
         
         # 创建界面组件
         self.create_widgets()
@@ -38,7 +41,7 @@ class GameUI:
         self.root.grid_rowconfigure(0, weight=0)  # 顶部信息区
         self.root.grid_rowconfigure(1, weight=0)  # 选项区
         self.root.grid_rowconfigure(2, weight=1)  # 中央游戏区
-        self.root.grid_rowconfigure(3, weight=3)  # 日志区
+        self.root.grid_rowconfigure(3, weight=6)  # 日志区
         self.root.grid_rowconfigure(4, weight=0)  # 按钮区
         self.root.grid_rowconfigure(5, weight=0)  # 状态提示
         self.root.grid_rowconfigure(6, weight=0)  # 加载提示
@@ -66,11 +69,11 @@ class GameUI:
         option_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=2)
         option_frame.grid_columnconfigure(0, weight=1)
         
-        self.hide_info_var = tk.BooleanVar(value=False)
+        if self.game.hasRealPlayer: self.hide_info_var = tk.BooleanVar(value=True)# 有真实玩家，默认设置为打开
+        else: self.hide_info_var = tk.BooleanVar(value=False)        
         self.hide_info_check = tk.Checkbutton(
             option_frame, text="屏蔽玩家信息", variable=self.hide_info_var,
-            font=("Arial", 10), bg="#f0f0f0", command=self.toggle_hide_info
-        )
+            font=("Arial", 10), bg="#f0f0f0", command=self.toggle_hide_info)
         self.hide_info_check.grid(row=0, column=0, sticky="w", padx=10, pady=2)
         
         # 中央游戏区域
@@ -88,43 +91,42 @@ class GameUI:
         # 上方玩家
         top_player_frame = tk.Frame(center_frame, bd=2, relief=tk.SOLID, bg="#e0e0e0")
         top_player_frame.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
-        self.top_player_label = tk.Label(top_player_frame, text="玩家1: []", font=("Arial", 10), bg="#e0e0e0")
+        self.top_player_label = tk.Label(top_player_frame, text="玩家1: []", font=("Arial", 10), bg="#e0e0e0", width=25, height=3)
         self.top_player_label.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         # 左侧玩家
         left_player_frame = tk.Frame(center_frame, bd=2, relief=tk.SOLID, bg="#e0e0e0")
         left_player_frame.grid(row=1, column=0, sticky="ns", padx=5, pady=5)
-        self.left_player_label = tk.Label(left_player_frame, text="玩家2: []", font=("Arial", 10), bg="#e0e0e0")
+        self.left_player_label = tk.Label(left_player_frame, text="玩家2: []", font=("Arial", 10), bg="#e0e0e0", width=25, height=4)
         self.left_player_label.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         # 右侧玩家
         right_player_frame = tk.Frame(center_frame, bd=2, relief=tk.SOLID, bg="#e0e0e0")
         right_player_frame.grid(row=1, column=2, sticky="ns", padx=5, pady=5)
-        self.right_player_label = tk.Label(right_player_frame, text="玩家3: []", font=("Arial", 10), bg="#e0e0e0")
+        self.right_player_label = tk.Label(right_player_frame, text="玩家3: []", font=("Arial", 10), bg="#e0e0e0", width=25, height=4)
         self.right_player_label.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         # 下方玩家
         bottom_player_frame = tk.Frame(center_frame, bd=2, relief=tk.SOLID, bg="#e0e0e0")
         bottom_player_frame.grid(row=2, column=1, sticky="ew", padx=5, pady=5)
-        self.bottom_player_label = tk.Label(bottom_player_frame, text="玩家4: []", font=("Arial", 10), bg="#e0e0e0")
+        self.bottom_player_label = tk.Label(bottom_player_frame, text="玩家4: []", font=("Arial", 10), bg="#e0e0e0", width=25, height=3)
         self.bottom_player_label.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         # 中央出牌区域
         play_area = tk.Frame(center_frame, bd=2, relief=tk.SOLID, bg="#f8f8f8")
         play_area.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
-        
-        self.play_log_label = tk.Label(play_area, text="当前出牌: 无", font=("Arial", 14, "bold"), bg="#f8f8f8")
+        self.play_log_label = tk.Label(play_area, text="当前出牌: 无", font=("Arial", 12, "bold"), bg="#f8f8f8", wraplength=300, height=4, width=40)
         self.play_log_label.pack(fill=tk.BOTH, expand=True, pady=20)
 
         # 游戏日志区域
         log_frame = tk.Frame(self.root, bd=2, relief=tk.SOLID)
         log_frame.grid(row=3, column=0, sticky="nsew", padx=10, pady=5)
         
-        log_title = tk.Label(log_frame, text="游戏日志", font=("Arial", 12, "bold"), bg="#f0f0f0")
+        log_title = tk.Label(log_frame, text="游戏日志", font=("Arial", 12, "bold"), bg="#f0f0f0",)
         log_title.pack(anchor=tk.W, fill=tk.X, pady=5, padx=5)
         
         # 增加height参数并确保日志区域可以扩展
-        self.round_log_text = tk.Text(log_frame, height=16, width=80, font=("Arial", 10))
+        self.round_log_text = tk.Text(log_frame, height=25, width=80, font=("Arial", 10))
         self.round_log_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         scrollbar = tk.Scrollbar(self.round_log_text, command=self.round_log_text.yview)
@@ -138,8 +140,7 @@ class GameUI:
         self.next_round_button = tk.Button(
             button_frame, text="开始下一轮", command=self.start_next_round,
             font=("Arial", 12), bg="#4CAF50", fg="white", relief=tk.RAISED, bd=2,
-            padx=20, pady=5
-        )
+            padx=20, pady=5)
         self.next_round_button.pack(expand=True)
         
         # 状态提示
@@ -193,7 +194,6 @@ class GameUI:
         """
         if not self.game_running or self.game.gameOver or self.is_processing:
             return
-            
         self.round_ended = False 
         self.is_processing = True  
         self.next_round_button.config(state=tk.DISABLED)  # 禁用按钮
@@ -304,7 +304,6 @@ class GameUI:
             # 继续下一个玩家（在主线程中调度）
             self.root.after(1000, self.run_current_round)  # 延迟1秒，便于观察
 
-
     def enable_input(self, player):
         """
         启用输入功能
@@ -313,6 +312,11 @@ class GameUI:
         self.input_enabled = True
         self.input_entry.config(state=tk.NORMAL)
         self.submit_button.config(state=tk.NORMAL)
+
+        self.input_entry.unbind("<Return>")  # 清除之前绑定
+        self.input_entry.delete(0, tk.END)
+        self.input_entry.bind("<Return>", self.on_input_submit)
+        self.submit_button.config(command=self.on_input_submit)
         
         # 显示手牌提示
         hand_display = "你的手牌: " + ", ".join([f"{i}:{card}" for i, card in enumerate(player.hand)])
@@ -340,15 +344,17 @@ class GameUI:
             return
             
         user_input = self.input_entry.get().strip().lower()
-        self.log_action(f"玩家输入: {user_input}")
+        self.input_entry.delete(0, tk.END)  # 清空输入框      
         
         current_player = self.game.players[self.game.currentIndex]
         action = current_player.parse_action_input(user_input)  
         
-        if not action:
+        if action is None:
             self.log_action("无效输入，请重新输入。")
             return
-            
+        
+        self.log_action(f"玩家输入: {user_input}")  
+
         # 处理出牌操作
         if action == "play":
             self.handle_play_action(current_player)
@@ -361,8 +367,12 @@ class GameUI:
         处理出牌操作
         """
         self.log_action("请输入要打出的牌的索引（空格分隔，最多3张）:")
+
+        self.input_entry.unbind("<Return>")  # 清除之前绑定
         self.input_entry.delete(0, tk.END)
         self.input_entry.bind("<Return>", self.on_play_cards_submit)
+        self.submit_button.config(command=self.on_play_cards_submit)
+
         self.current_action = "play"
         self.current_player = player
 
@@ -371,15 +381,16 @@ class GameUI:
         处理出牌索引输入
         """
         card_indexes = self.input_entry.get().strip()
-        
+        self.input_entry.delete(0, tk.END)  # 清空输入框
         try:
             cards = [int(i) for i in card_indexes.split()]
-            print(f"输入的索引: {cards}")
-            print(f"当前玩家手牌: {self.current_player.hand}")
+
+            # print(f"输入的索引: {cards}")
+            # print(f"当前玩家手牌: {self.current_player.hand}")
             
             # 检查索引有效性
             if not all(0 <= i < len(self.current_player.hand) for i in cards):
-                self.log_action("错误：输入的索引超出手牌范围")
+                self.log_action("错误：输入的索引超出范围")
                 self.handle_play_action(self.current_player)
                 return
                 
@@ -394,6 +405,9 @@ class GameUI:
                 self.log_action("错误：不能选择重复的牌")
                 self.handle_play_action(self.current_player)
                 return
+
+            self.log_action(f"玩家输入索引: {cards}") 
+            self.log_action(f"对应{[self.current_player.hand[card] for card in cards]}")
                 
             # 调用RealPlayer的PlayCard方法
             action = self.current_player.PlayCard(self.game.roundLog, self.game.currentCard, len(self.game.players))
@@ -420,7 +434,6 @@ class GameUI:
             self.log_action("错误：请输入有效的数字索引")
             self.handle_play_action(self.current_player)
     
-
     def generate_action_description_in_thread(self, roundLog, hand, playNum, cards):
         """在后台线程中生成动作描述"""
         try:
@@ -485,7 +498,10 @@ class GameUI:
         self.update_player_status()
         
         if self.game.gameOver:
-            self.status_label.config(text=f"游戏结束，获胜者是 {self.game.winner.name}!")
+            if self.game.winner is None:
+                self.status_label.config(text=f"--- 游戏结束，所有玩家都已阵亡，没有获胜者 ---")
+            else:
+                self.status_label.config(text=f"游戏结束，获胜者是 {self.game.winner.name}!")
             self.next_round_button.config(state=tk.DISABLED)
         else:
             self.status_label.config(text="轮次结束，点击开始下一轮")
@@ -571,8 +587,195 @@ class GameUI:
         self.round_log_text.insert(tk.END, f"{action_text}\n")
         self.round_log_text.see(tk.END)  # 滚动到最新日志
 
+class GameUIwithRole(GameUI):
+    def __init__(self, root):
+        super().__init__(root)
+        self.game = GamewithRole(players, self)
+        if self.game.hasRealPlayer:
+            self.hide_other_info = True
+        self.canQuestion = True
+    
+    def update_player_cards(self):
+        """
+        更新玩家角色、手牌显示
+        """
+        all_time = self.game.players[0].revolver.chambers
+        
+        # 找到真实玩家
+        real_player = None
+        for player in self.game.players:
+            if isinstance(player, RealPlayer):
+                real_player = player
+                break
+                
+        for i, player in enumerate(self.game.players):
+            time = self.game.players[i].revolver.fire_times
+            fire_message = f"{time}/{all_time}"
+            
+            # 构建玩家显示文本
+            if player == real_player or not self.hide_other_info:
+                if player.is_out:
+                    display_text = f"{player.name}({fire_message}): 已出局\n角色：{player.role.name}"
+                else:
+                    display_text = f"{player.name}({fire_message})\n角色：{player.role.name}\n手牌：{player.hand}"
+            else:
+                # 启用屏蔽时隐藏其他玩家信息
+                if player.is_out:
+                    display_text = f"{player.name}({fire_message}): 已出局"
+                else:
+                    display_text = f"{player.name}({fire_message})\n"
+            
+            # 更新显示
+            if i == 0:
+                self.top_player_label.config(text=display_text)
+            elif i == 1:
+                self.left_player_label.config(text=display_text)
+            elif i == 2:
+                self.bottom_player_label.config(text=display_text)
+            elif i == 3:
+                self.right_player_label.config(text=display_text)
+
+    def auto_process_player_turn(self, player):
+        """
+        处理玩家回合
+        """
+        self.root.after(0, lambda: self.loading_label.config(text=f"{player.name} 思考中..."))
+        
+        try:
+            self.log_action(f"--- {player.name}的回合---")
+
+            if player.role and player.role.name == "魔术师":
+                player.role.try_trigger(self.game, player)
+            
+            if player.role and player.role.name == "审问者": 
+                can_question = not player.role.try_trigger(self.game, player)
+                self.canQuestion = can_question
+            else: 
+                self.canQuestion = True
+            
+            # 记录玩家当前手牌（在主线程中更新）
+            current_hand = player.hand.copy()
+            self.root.after(0, lambda: self.log_action(f"--- {player.name}的手牌: {current_hand} ---"))
+            
+            # 玩家出牌
+            action = player.PlayCard(self.game.roundLog, self.game.currentCard, len(self.game.players), canQuestion=self.canQuestion)
+            
+            # 记录出牌（在主线程中更新）
+            self.root.after(0, lambda: self.log_action(f"--- {player.name} 出牌: {action} ---"))
+            
+            # 处理玩家动作
+            self.game.process_action(action)
+            
+            # 更新UI（在主线程中更新）
+            self.root.after(0, self.update_player_cards)
+            self.root.after(0, lambda: self.update_play_log(self.game.palyCardLog))
+            self.root.after(0, self.root.update)  # 强制更新UI
+            
+        except Exception as e:
+            print(f"Player turn error: {e}")
+            self.root.after(0, lambda: messagebox.showerror("错误", f"处理玩家回合时出错: {str(e)}"))
+        finally:
+            self.root.after(0, lambda: self.loading_label.config(text=""))
+            
+            # 检查轮次是否结束
+            if self.game.roundOver or self.game.gameOver:
+                self.root.after(0, self.on_round_complete)
+                return
+                
+            # 继续下一个玩家（在主线程中调度）
+            self.root.after(1000, self.run_current_round)  # 延迟1秒，便于观察
+
+    def on_play_cards_submit(self, event):
+        """
+        处理出牌索引输入
+        """
+        card_indexes = self.input_entry.get().strip()
+        self.input_entry.delete(0, tk.END)  # 清空输入框
+
+        try:
+            cards = [int(i) for i in card_indexes.split()]
+            # print(f"输入的索引: {cards}")
+            # print(f"当前玩家手牌: {self.current_player.hand}")
+            
+            # 检查索引有效性
+            if not all(0 <= i < len(self.current_player.hand) for i in cards):
+                self.log_action("错误：输入的索引超出手牌范围")
+                self.handle_play_action(self.current_player)
+                return
+                
+            # 检查卡牌数量
+            if not (1 <= len(cards) <= 3):
+                self.log_action("错误：请选择1-3张牌")
+                self.handle_play_action(self.current_player)
+                return
+                
+            # 检查是否有重复索引
+            if len(cards) != len(set(cards)):
+                self.log_action("错误：不能选择重复的牌")
+                self.handle_play_action(self.current_player)
+                return
+            
+            self.log_action(f"玩家输入索引: {cards}") 
+            self.log_action(f"对应{[self.current_player.hand[card] for card in cards]}")
+
+            # 调用RealPlayer的PlayCard方法
+            action = self.current_player.PlayCard(self.game.roundLog, self.game.currentCard, len(self.game.players), canQuestion=self.canQuestion)
+            
+            # 确保action包含必要的键
+            if "cards" not in action:
+                action["cards"] = []
+            if "type" not in action:
+                action["type"] = "play"
+            action["cards"] = cards
+            action["type"] = "play"
+
+            self.current_action = action
+            self.selected_cards = cards  # 保存选中的卡牌索引
+
+            threading.Thread(
+                target=self.generate_action_description_in_thread,
+                args=(self.game.roundLog, self.current_player.hand, len(self.game.players), cards),
+                daemon=True
+            ).start()
+
+        except ValueError:
+            self.log_action("错误：请输入有效的数字索引")
+            self.handle_play_action(self.current_player)
+
+    def enable_input(self, player):
+        """
+        启用输入功能
+        """
+        self.log_action(f"你的回合，请输入操作")
+        self.input_enabled = True
+        self.input_entry.config(state=tk.NORMAL)
+        self.submit_button.config(state=tk.NORMAL)
+
+        self.input_entry.unbind("<Return>")  # 清除之前绑定
+        self.input_entry.delete(0, tk.END)
+        self.input_entry.bind("<Return>", self.on_input_submit)
+        self.submit_button.config(command=self.on_input_submit)
+
+        self.log_action(f"本次游戏模式为 Role")
+        self.log_action(f"你本局的角色是【{player.role.name}】\n"
+                        f"本轮已触发 {player.role.used_this_round} 次，累计触发 {player.role.used_total} 次\n")
+        if player.role.name == "预言家" and "revolver_state" in player.role.message:
+            state = player.role.message["revolver_state"]
+            self.log_action(f"你的预言家技能成功触发，本局游戏中你的初始手枪弹针位置/子弹位置为 {state[0]}/{state[1]}")
+        
+        # 显示手牌提示
+        hand_display = "你的手牌: " + ", ".join([f"{i}:{card}" for i, card in enumerate(player.hand)])
+        self.log_action(hand_display)
+        
+        if self.game.roundLog and self.canQuestion:
+            self.log_action("请输入操作（出牌/play/p/1 或 质疑/question/q/2）：")
+        else:
+            if not self.canQuestion:
+                self.log_action("你的上家是审问者并在本轮成功发动技能，因此你本回合只能选择出牌，无法选择质疑")
+            self.log_action("请输入操作（出牌/play/p/1）：")
 
 if __name__ == "__main__":
     root = tk.Tk()
-    ui = GameUI(root)
+    ui = GameUIwithRole(root)
+    # ui = GameUI(root)
     root.mainloop()

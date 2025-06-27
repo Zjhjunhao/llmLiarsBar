@@ -43,7 +43,6 @@ class Role:
             return True
         return False
 
-
 def get_defined_roles():
     return [
         Role(

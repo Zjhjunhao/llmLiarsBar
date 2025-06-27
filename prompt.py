@@ -1,13 +1,9 @@
-from transformers import PegasusForConditionalGeneration
-from chromadb.config import Settings
-from chromadb.utils import embedding_functions
-import os, torch
 import json, chromadb
 from sentence_transformers import SentenceTransformer
 from chromadb.api.types import EmbeddingFunction
 from role import *
 
-class LocalSentenceTransformerEmbeddingFunction(EmbeddingFunction):
+class LocalEmbeddingFunction(EmbeddingFunction):
     """
     嵌入函数，将文本转化为向量
     """
@@ -39,14 +35,13 @@ class Prompt():
         self.mode = "common"
         self.role = None
         self.canQuestion = True
-        
     @staticmethod
     def load_or_build_collections(tip_path="cleaned_output/cleaned_tips.jsonl", record_path="cleaned_output/cleaned_cases.jsonl", db_dir: str = "chroma_db"):
         """
         加载预先处理好的策略文件和对局数据文件，并使用嵌入函数，将二者转化为向量库便于查询
         知识库会存储在 /chroma_db 文件夹下，只会生成一次
         """
-        local_ef = LocalSentenceTransformerEmbeddingFunction()
+        local_ef = LocalEmbeddingFunction()
         # client = chromadb.Client(Settings(chroma_db_impl="duckdb+parquet", persist_directory=db_dir))
         client = chromadb.PersistentClient(path=db_dir)
         strategy_col = client.get_or_create_collection("liars_strategy", embedding_function=local_ef)
@@ -202,14 +197,14 @@ class Prompt():
                 f"- 审问者：出牌后，有 30% 概率让下家无法质疑\n"
                 f"- 赌徒：若被击中阵亡，有 30% 概率反杀射击者（若不是最后一人）\n"
                 f"- 装弹师：开枪未命中后，有 30% 概率改变子弹位置\n"
-                f"- 预言家：每轮开始时，有 30% 概率知晓本轮子弹位置\n"
+                f"- 预言家：每轮开始时，有 30% 概率知晓本局游戏初始的弹针位置和子弹位置\n"
                 f"你本局的角色是【{self.role.name}】，"
                 f"本轮已触发 {self.role.used_this_round} 次，累计触发 {self.role.used_total} 次\n"
                 f"请不要主动暴露你的角色，尽管有的时候会被其他玩家猜到。")
             if self.role.name == "预言家" and "revolver_state" in self.role.message:
                 state = self.role.message["revolver_state"]
                 role_mode_text += (
-                    f"你的预言家技能成功触发，本局游戏中你的手枪弹针位置/子弹位置为 {state[0]}/{state[1]}")
+                    f"你的预言家技能成功触发，本局游戏中你的初始手枪弹针位置/子弹位置为 {state[0]}/{state[1]}")
             if not self.canQuestion:
                 role_mode_text += (
                     f"\n上家是审问者并本轮成功发动技能，你本回合只能选择出牌（play），无法选择质疑（question）")
@@ -222,7 +217,7 @@ class Prompt():
             - 牌池20张：6K、6Q、6A、2Joker（万能牌），玩家数小于4的时候不会全部发出。
             - 2-4 名玩家，每轮随机发5张牌，选目标牌（Q/K/A）；游戏进行若干轮。
             - 出牌时打1-3张牌，声明都是目标牌（其他玩家只能知道出牌数量，不知道牌面或花色）。
-            - 可质疑上家(第一个玩家无法质疑)，质疑成功上家/质疑失败自己 扣动左轮手枪扳机，扳机有{self.chambers}个弹膛，装1弹，子弹位置随机，中弹出局。
+            - 可质疑上家(第一个玩家无法质疑)，质疑成功上家/质疑失败自己 扣动左轮手枪扳机。扳机有6个弹膛，编号1-6，装1弹，子弹位置随机，中弹出局（弹针和子弹位置重合）。
                 - 当上家打出的牌不全符合要求，质疑成功
                 - 一轮中有玩家质疑，无论质疑是否成功，该轮游戏结束
             - 若玩家在一轮中出完所有的手牌，自动退出该轮次；轮次中剩下的最后一个需要扣动左轮扳机
