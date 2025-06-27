@@ -78,7 +78,6 @@ class Prompt():
                     ids=[f"tip_{j}"],
                     metadatas=[{"type": tip["type"]}]
                 )
-        # client.persist()
         print("向量库已保存。")
 
         return strategy_col, record_col
@@ -173,6 +172,7 @@ class Prompt():
         return prompt
 
     def add_role_prompt(self, role:Role, canQuestion=True):
+        """新玩法角色模式信息更新"""
         self.mode = "role"
         self.role = role
         self.canQuestion = canQuestion

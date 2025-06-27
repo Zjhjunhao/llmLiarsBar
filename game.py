@@ -181,9 +181,11 @@ class Game:
         print(f"---Game Over---\n ---Winner is {self.winner.name}!---")
 
     def save_logs(self, action):
+        """保存对局记录"""
         self.allRoundLog.append(action)
 
     def remove_player(self, player_name):
+        """当玩家在一轮游戏中出完所有的手牌后，退出当前轮次"""
         for player in self.players:
             if player.name == player_name and player.type == "Palyer":
                 player.exit_round()
@@ -191,6 +193,7 @@ class Game:
         return
 
     def handle_print(self, action:dict):
+        """有真实玩家参与时，需要隐藏一些关键信息"""
         action = action.copy()
         if self.hasRealPlayer: # 有真实玩家
             if "originHand" in action:
@@ -377,7 +380,6 @@ class GamewithRoles(Game):
 
 if __name__ == "__main__":
     arg = "common"  
-
     if len(sys.argv) > 1:
         arg = sys.argv[1].lower()
     if arg == "role":

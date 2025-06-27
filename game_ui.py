@@ -1,15 +1,10 @@
 import tkinter as tk
 from tkinter import messagebox
-import random
 import threading
-from revolver import Revolver
 from config import players
 from game_for_ui import *
-from utils import Logger
 from player import *
 import sys
-
-ROLE = True
 
 class GameUI:
     def __init__(self, root):
@@ -322,6 +317,9 @@ class GameUI:
         self.input_entry.delete(0, tk.END)
         self.input_entry.bind("<Return>", self.on_input_submit)
         self.submit_button.config(command=self.on_input_submit)
+
+        # 显示开枪提示
+        self.log_action(f"本轮游戏中，你已经开枪{player.revolver.fire_times}次/6次")
         
         # 显示手牌提示
         hand_display = "你的手牌: " + ", ".join([f"{i}:{card}" for i, card in enumerate(player.hand)])
@@ -381,7 +379,7 @@ class GameUI:
         self.current_action = "play"
         self.current_player = player
 
-    def on_play_cards_submit(self, event):
+    def on_play_cards_submit(self, event=None):
         """
         处理出牌索引输入
         """
@@ -718,8 +716,11 @@ class GameUIwithRole(GameUI):
             state = player.role.message["revolver_state"]
             self.log_action(f"你的预言家技能成功触发，本局游戏中你的初始手枪弹针位置/子弹位置为 {state[0]}/{state[1]}")
         
+        # 显示开枪提示
+        self.log_action(f"本轮游戏中，你已经开枪{player.revolver.fire_times}次/6次")
+
         # 显示手牌提示
-        hand_display = "你的手牌: " + ", ".join([f"{i}:{card}" for i, card in enumerate(player.hand)])
+        hand_display = "手中的牌: " + ", ".join([f"{i}:{card}" for i, card in enumerate(player.hand)])
         self.log_action(hand_display)
         
         if self.game.roundLog and self.canQuestion:

@@ -1,7 +1,3 @@
-import random, os, sys
-from revolver import Revolver
-from config import players
-from utils import Logger
 from player import *
 from role import *
 
@@ -281,6 +277,9 @@ class GamewithRole(Game):
                 player.role.try_trigger(self, player)
 
     def process_action(self, action):
+        """
+        处理玩家动作
+        """
         playerNum = len(self.players)
         i = self.currentIndex
         player = self.players[i]

@@ -1,8 +1,7 @@
 from revolver import Revolver
-from openai import OpenAI, Client
+from openai import OpenAI
 import json
 import random
-import chromadb
 from prompt import *
 
 class Player:
@@ -88,6 +87,7 @@ class Player:
                 }
 
     def exit_round(self,):
+        """当前轮次出完牌之后的提示（针对真实玩家）"""
         print("您已经成功出完牌且无人质疑，自动退出本轮，进入观战状态，本轮内不会开枪---")
 
 class RealPlayer(Player):
@@ -123,7 +123,7 @@ class RealPlayer(Player):
                 print(f"{idx}: {card}")
             if roundLog: print(f"你的上家: {roundLog[-1]}")
             else: print("你是第一位玩家")
-            print(f"你已经开枪次数：{self.revolver.fire_times}")
+            print(f"你已经开枪次数：{self.revolver.fire_times}次/6次")
             while True:
                 if roundLog and canQuestion: 
                     raw_input_value = input("请选择操作（出牌/play/p/1 或 质疑/question/q/2）：")
