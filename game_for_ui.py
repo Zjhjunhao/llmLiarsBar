@@ -6,41 +6,49 @@ from player import *
 from role import *
 
 class Game:
+    """
+    ui版本对应的游戏类
+    """
     def __init__(self, players, ui, file_name=None):
-        # 初始化牌组
         self.version = "ui"
-        self.Cards = ["K"]*6 + ["Q"]*6 + ["A"]*6 + ["Joker"]*2
-        self.currentCard = None
-
-        self.gameRound = 0
+        # 玩家
         self.players = players
+        # 是否有真人参与
         self.hasRealPlayer = any(isinstance(p, RealPlayer) for p in players)
+        # 初始化牌组
+        self.Cards = ["K"]*6 + ["Q"]*6 + ["A"]*6 + ["Joker"]*2
+        # 游戏日志
         self.playLog = []
-        self.roundCards = 0  # 该回合中所有玩家出牌的总数
+        # 轮次计数
+        self.gameRound = 0
+        # 当前目标牌
+        self.currentCard = None
+        # 该回合中所有玩家出牌的总数
+        self.roundCards = 0  
+        # 轮次信息
         self.roundLog = []
-        self.allRoundLog = []  # 存放所有action
+        # 所有轮次信息
+        self.allRoundLog = []  
+        # 该轮参与玩家
         self.playersinround = set()
-
-        self.currentIndex = random.randint(0, 3)
-        self.winner = None
-        self.gameOver = False
+        # 上一回合失败者
         self.lastLossPlayer = random.randint(0, 3)
+        # 当前回合玩家
+        self.currentIndex = random.randint(0, 3)
+        # 胜利者
+        self.winner = None
+        # 游戏是否结束
+        self.gameOver = False
+        # 轮次是否结束
         self.roundOver = False
+        # 玩家出牌信息
         self.palyCardLog = None
-        # ui界面
-        self.ui = ui  
-
-        if file_name is None:
-            import datetime
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            file_name = f"game_log_{timestamp}"
-        self.log_path = os.path.join(os.path.dirname(__file__), r"Liar's Bar Logs", f"{file_name}.log")
-        os.makedirs(os.path.dirname(self.log_path), exist_ok=True)
-        sys.stdout = Logger(self.log_path)
-
+        # 初始化玩家
         for player in self.players:
             player.revolver = Revolver()
             player.is_out = False
+        # ui界面
+        self.ui = ui  
 
     def giveCards(self):
         """
@@ -288,8 +296,8 @@ class GamewithRole(Game):
             
             if is_lying:
                 self.ui.log_action("--- 质疑成功 ---")
-                self.currentIndex = i % len(self.players)
-                self.lastLossPlayer = i % len(self.players)
+                self.currentIndex = prev_index
+                self.lastLossPlayer = prev_index
                 if lastPlayer.revolver.fire():
                     self.ui.log_action(f"--- {lastPlayer.name} 中弹出局 ---")
                     lastPlayer.is_out = True
@@ -312,8 +320,8 @@ class GamewithRole(Game):
                         lastPlayer.role.try_trigger(self, lastPlayer)
             else:
                 self.ui.log_action("--- 质疑失败 ---")
-                self.currentIndex = prev_index
-                self.lastLossPlayer = prev_index
+                self.currentIndex = i
+                self.lastLossPlayer = i
                 if player.revolver.fire():
                     self.ui.log_action(f"--- {player.name} 中弹出局 ---")
                     player.is_out = True
@@ -414,4 +422,3 @@ class GamewithRole(Game):
         while self.players[self.currentIndex].is_out:
             self.currentIndex = (self.currentIndex + 1) % len(self.players)
         return
-
