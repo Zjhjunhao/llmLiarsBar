@@ -2,8 +2,10 @@ from player import *
 from openai import OpenAI
 from prompt import Prompt
 
+# 玩家列表
 players = []
 
+# 各种API，有可能没额度
 deepseek_client = OpenAI(
             api_key="sk-6da9967819af43fa814f8789fce19d85",
             base_url="https://api.deepseek.com",
@@ -31,7 +33,6 @@ players.append(Player("deepseek1", "deepseek-chat", deepseek_client, prompt))
 players.append(Player("deepseek2", "deepseek-chat", deepseek_client, prompt))
 players.append(Player("deepseek3", "deepseek-chat", deepseek_client, prompt))
 # players.append(Player("deepseek4", "deepseek-chat", deepseek_clinet, prompt))
-players.append(RealPlayer("Player", "deepseek-chat", deepseek_client, prompt))
 # players.append(Player("doubao1", "ep-20250612202125-pkq7n", doubao_client, prompt))
 # players.append(Player("qwen1", "qwen-plus", qwen_client))
 # players.append(Player("qwen2", "qwen-plus", qwen_client))
@@ -41,3 +42,5 @@ players.append(RealPlayer("Player", "deepseek-chat", deepseek_client, prompt))
 # players.append(Player("DeepSeek", "deepseek-chat", deepseek_client, prompt))
 # players.append(Player("Qwen", "qwen-plus", qwen_client, prompt))
 #players.append(Player("DouBao", "ep-20250612202125-pkq7n", doubao_client, prompt))
+# 真人参与
+players.append(RealPlayer("Player", "deepseek-chat", deepseek_client, prompt))

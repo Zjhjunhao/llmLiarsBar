@@ -5,34 +5,54 @@ from config import players
 from utils import Logger
 from role_effects import *
 from role import *
+import datetime
 
 
 class Game:
     def __init__(self, players, file_name=r"role"):
         self.version = "shell"
+        # 玩家
+        self.players = players
+        # 是否有真人参与
+        self.hasRealPlayer = any(isinstance(p, RealPlayer) for p in players)
         # 初始化牌组
         self.Cards = ["K"]*6 + ["Q"]*6 + ["A"]*6 + ["Joker"]*2
-        self.currentCard = None
-
-        self.gameRound = 0
-        self.players = players
-        self.hasRealPlayer = any(isinstance(p, RealPlayer) for p in players)
+        # 游戏日志
         self.playLog = []
-        self.roundCards = 0 # 该回合中所有玩家出牌的总数
+        # 轮次计数
+        self.gameRound = 0
+        # 当前目标牌
+        self.currentCard = None
+        # 该回合中所有玩家出牌的总数
+        self.roundCards = 0  
+        # 轮次信息
         self.roundLog = []
-        self.allRoundLog = [] # 存放所有action
+        # 所有轮次信息
+        self.allRoundLog = []  
+        # 该轮参与玩家
         self.playersinround = set()
-
-        self.currentIndex = 0
+        # 上一回合失败者
+        self.lastLossPlayer = random.randint(0, 3)
+        # 胜利者
         self.winner = None
+        # 游戏是否结束
         self.gameOver = False
-        self.lastLssPlayer = random.randint(1,4)
+        # 轮次是否结束
         self.roundOver = False
+        # 玩家出牌信息
         self.palyCardLog = None
+        # 日志记录
+        for player in self.players:
+            player.revolver = Revolver()
+            player.is_out = False
 
+        if file_name is None:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            file_name = f"game_log_{timestamp}"
         self.log_path = os.path.join(os.path.dirname(__file__), r"Liar's Bar Logs", f"{file_name}.log")
+        os.makedirs(os.path.dirname(self.log_path), exist_ok=True)
         sys.stdout = Logger(self.log_path)
-
+        # 初始化玩家
         for player in self.players:
             player.revolver = Revolver()
             player.is_out = False
@@ -58,6 +78,7 @@ class Game:
         self.roundCards = 0
         self.palyCardLog = None
         
+         # 确定本轮参与的玩家
         self.playersinround = set()
         for player in self.players:
             if not player.is_out:
@@ -78,10 +99,12 @@ class Game:
         判断是否说谎
         """
         liar = False
-        for card in self.allRoundLog[-1]["cards"]:
-            hand = self.allRoundLog[-1]["originHand"]
-            if hand[card] != self.currentCard and hand[card] != "Joker":
-                liar = True
+        if self.allRoundLog:
+            last_action = self.allRoundLog[-1]
+            for card in last_action["cards"]:
+                hand = last_action["originHand"]
+                if hand[card] != self.currentCard and hand[card] != "Joker":
+                    liar = True
         return liar
 
     def GameStart(self):
@@ -89,6 +112,7 @@ class Game:
         游戏开始
         """
         while not self.gameOver:
+            # 游戏未结束开始下一个轮次
             self.RoundStart()
             while not self.roundOver:
                 playerNum = len(self.players)
@@ -99,6 +123,7 @@ class Game:
                     print(f"--- {player.name}'s turn ---")
                     action = player.PlayCard(self.roundLog, self.currentCard, playerNum)
                     self.handle_print(action)
+                    # 若质疑
                     if action["type"] == "question":
                         prev_index = (i + self.lastLossPlayer - 1) % playerNum
                         while self.players[prev_index].name not in self.playersinround:
@@ -108,23 +133,25 @@ class Game:
                             print("---Question success---")
                             if lastPlayer.revolver.fire():
                                 print(f"---Fire success, {lastPlayer.name} die---")
+                                # 终端版本，我们直接删除淘汰玩家，在ui界面为保证显示正确，我们并没有这么操作
                                 self.players.remove(lastPlayer)
-                                self.lastLossPlayer = max(0, (i + self.lastLossPlayer)%playerNum - 1) # index 移动一位
+                                self.lastLossPlayer = max(0, (i + self.lastLossPlayer - 1)%playerNum - 1) # index 移动一位
                             else:
                                 print(f"---Fire fial, {lastPlayer.name} still alive---")
-                                self.lastLossPlayer = (i + self.lastLossPlayer)%playerNum
+                                self.lastLossPlayer = prev_index
                             self.roundOver = True
                         else:
                             print("---Question fail---")
                             if player.revolver.fire():
                                 print(f"---Fire success, {player.name} die---")
                                 self.players.remove(player)
-                                self.lastLossPlayer = min(playerNum-2, prev_index)
+                                self.lastLossPlayer = max(0, (i + self.lastLossPlayer)%playerNum - 1) 
                             else:
                                 print(f"---Fire fial, {player.name} still alive---")
-                                self.lastLossPlayer = prev_index
+                                self.lastLossPlayer = (i + self.lastLossPlayer - 1)%playerNum
                             self.roundOver = True
                         break
+                    # 若出牌
                     else:
                         if len(self.playersinround) == 1: 
                             print(f"---Others has played all cards--")
@@ -352,7 +379,13 @@ class GamewithRoles(Game):
             print(f"---Game Over---\n ---Winner is {self.winner.name}!---")
 
 if __name__ == "__main__":
-    game = GamewithRoles(players)
+    arg = "common"  
+    if len(sys.argv) > 1:
+        arg = sys.argv[1].lower()
+    if arg == "role":
+        game = Game(players)
+    else:
+        game = GamewithRoles(players)
     game.GameStart()
                         
 

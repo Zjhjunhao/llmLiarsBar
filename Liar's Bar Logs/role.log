@@ -1,0 +1,32 @@
+[角色分配] Player → 审问者
+[角色分配] ChatGPT → 魔术师
+[角色分配] DeepSeek → 赌徒
+[角色分配] Qwen → 装弹师
+
+--- New Round: 1 ---
+--- Survived Players: Player | Qwen | ChatGPT | DeepSeek ---
+--- This Round Card: Q ---
+--- ChatGPT's turn ---
+{'type': 'play', 'cards': 2, 'playAction': '我轻轻倚在椅背上，嘴角挂着若有若无的笑意，随手抖出两张牌啪地盖到桌中央，只淡淡补一句：“两张。”'}
+--- DeepSeek's turn ---
+{'type': 'play', 'cards': 2, 'playAction': '轻轻摇晃手中的牌，眼神在牌与对手之间游移，最终自信地甩出两张牌，嘴角带着一丝不易察觉的微笑，低声说道：‘两张。’'}
+--- Qwen's turn ---
+{'type': 'play', 'cards': 2, 'playAction': '轻轻摩挲着牌背，眼神不经意地扫过桌面，像是随意抛出两张牌，低声说道：‘两张。’'}
+--- Player's turn ---
+
+---- 玩家 Player 的回合 ----
+本次游戏模式为role
+
+你本局的角色是【审问者】
+本轮已触发 0 次，累计触发 0 次
+
+当前需要出的牌: Q
+你的手牌为:
+0: K
+1: Q
+2: Joker
+3: A
+4: Joker
+你的上家: {'playerName': 'Qwen', 'playCardNum': 2, 'playCardTotal': 6, 'playAction': '轻轻摩挲着牌背，眼神不经意地扫过桌面，像是随意抛出两张牌，低声说道：‘两张。’', 'remainCard': 3}
+你已经开枪次数：0
+请选择操作（出牌/play/p/1 或 质疑/question/q/2）：

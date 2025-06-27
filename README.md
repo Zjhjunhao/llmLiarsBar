@@ -56,11 +56,21 @@ pip install -r requirements.txt
 
 ## 🧠 游戏运行逻辑
 
-1. 运行 `game_ui.py` 启动游戏；
+1. 运行 `game_ui.py` 启动ui界面版游戏，运行`game.py`启动终端版游戏，我们提供两种模式，一种为普通模式，一种为设置了职业和技能的新模式；
+
+启动普通模式(默认为普通模式)
 ```
-python game_ui.py
+python game_ui.py common
+python game.py common
 ```
-2. 系统自动读取 `config.py` 中的玩家配置信息；
+
+启动职业模式
+```
+python game_ui.py role
+python game.py common
+```
+
+2. 系统自动读取 `config.py` 中的玩家配置信息，你可以在该文件下修改AI玩家模型，可以选择加入RealPlayer类玩家参与游戏；
 3. 初始化 UI 界面与游戏控制类；
 4. 游戏按轮进行，每轮流程如下：
    - 随机设定一张目标牌，并为每位玩家发放 5 张手牌；

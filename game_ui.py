@@ -7,6 +7,7 @@ from config import players
 from game_for_ui import *
 from utils import Logger
 from player import *
+import sys
 
 
 class GameUI:
@@ -166,7 +167,9 @@ class GameUI:
         self.submit_button.pack(side=tk.RIGHT, padx=5, pady=5)
 
     def toggle_hide_info(self):
-        """切换信息屏蔽状态"""
+        """
+        切换信息屏蔽状态
+        """
         self.hide_other_info = self.hide_info_var.get()
         status_text = "已启用" if self.hide_other_info else "已禁用"
         self.status_label.config(text=f"屏蔽玩家信息: {status_text}")
@@ -230,10 +233,10 @@ class GameUI:
             return
                 
         playerNum = len(self.game.players)
-        active_players = [p for p in self.game.players if not p.is_out and p.name in self.game.playersinround]
+        alive_players = [p for p in self.game.players if not p.is_out and p.name in self.game.playersinround]
         
-        # 如果没有活跃玩家，结束轮次
-        if not active_players:
+        # 如果没有存活玩家，结束轮次live
+        if not alive_players:
             self.game.roundOver = True
             self.root.after(0, self.on_round_complete)
             return
@@ -241,7 +244,7 @@ class GameUI:
         # 获取当前玩家
         current_player = self.game.players[self.game.currentIndex]
         
-        # 如果当前玩家不活跃，找到下一个活跃玩家
+        # 如果当前玩家已淘汰，找到下一个存活玩家
         if current_player.is_out or current_player.name not in self.game.playersinround:
             self.game.currentIndex = (self.game.currentIndex + 1) % playerNum
             while self.game.players[self.game.currentIndex].is_out or self.game.players[self.game.currentIndex].name not in self.game.playersinround:
@@ -250,11 +253,12 @@ class GameUI:
         
         # 处理玩家行动
         #self.process_player_turn_in_thread(current_player)
-
-        if isinstance(current_player, RealPlayer):  # 真实玩家
+         # 真实玩家
+        if isinstance(current_player, RealPlayer): 
             self.real_player_turn = True
             self.enable_input(current_player)
-        else:  # AI玩家
+        # AI玩家
+        else:  
             self.process_player_turn_in_thread(current_player)
 
     def process_player_turn_in_thread(self, player):
@@ -435,7 +439,9 @@ class GameUI:
             self.handle_play_action(self.current_player)
     
     def generate_action_description_in_thread(self, roundLog, hand, playNum, cards):
-        """在后台线程中生成动作描述"""
+        """
+        在后台线程中生成动作描述
+        """
         try:
             # 调用action_explaination生成动作描述
             playaction = self.current_player.action_explaination(roundLog, hand, playNum, self.current_action, cards)
@@ -450,7 +456,9 @@ class GameUI:
             self.is_generating_action = False
 
     def set_play_action(self, playaction):
-        """设置动作描述并继续游戏"""
+        """
+        设置动作描述并继续游戏
+        """
         if not hasattr(self, 'current_action'):
             return
             
@@ -774,8 +782,19 @@ class GameUIwithRole(GameUI):
                 self.log_action("你的上家是审问者并在本轮成功发动技能，因此你本回合只能选择出牌，无法选择质疑")
             self.log_action("请输入操作（出牌/play/p/1）：")
 
+
+
 if __name__ == "__main__":
     root = tk.Tk()
-    ui = GameUIwithRole(root)
-    # ui = GameUI(root)
+    
+    arg = "common"  
+    if len(sys.argv) > 1:
+        arg = sys.argv[1].lower()
+    
+
+    if arg == "role":
+        ui = GameUIwithRole(root)
+    else: 
+        ui = GameUI(root)
+    
     root.mainloop()
