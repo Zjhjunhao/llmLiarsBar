@@ -383,9 +383,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         arg = sys.argv[1].lower()
     if arg == "role":
-        game = Game(players)
-    else:
         game = GamewithRoles(players)
+    else:
+        game = Game(players)
     game.GameStart()
                         
 
